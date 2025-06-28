@@ -1,25 +1,30 @@
-import React from 'react';
 
-const Footer: React.FC = () => {
+export default function Footer() {
   return (
-    <footer className="bg-background border-t border-border mt-auto">
+    <footer className="border-t bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50">
       <div className="container mx-auto px-4 py-6">
         <div className="flex flex-col md:flex-row justify-between items-center">
-          <div className="text-sm text-muted-foreground">
-            © 2024 C-PLAN. All rights reserved.
+          <div className="flex items-center space-x-2">
+            <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+              <span className="text-primary-foreground text-xs font-bold">C</span>
+            </div>
+            <span className="text-sm text-muted-foreground">
+              © 2024 C-PLAN. All rights reserved.
+            </span>
           </div>
-          <div className="flex space-x-4 mt-4 md:mt-0">
-            <a href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              About
+          <div className="flex items-center space-x-4 mt-4 md:mt-0">
+            <a href="#" className="text-sm text-muted-foreground hover:text-foreground">
+              Privacy
             </a>
-            <a href="/settings" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Settings
+            <a href="#" className="text-sm text-muted-foreground hover:text-foreground">
+              Terms
+            </a>
+            <a href="#" className="text-sm text-muted-foreground hover:text-foreground">
+              Support
             </a>
           </div>
         </div>
       </div>
     </footer>
   );
-};
-
-export default Footer;
+}

@@ -6,13 +6,12 @@ import "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol";
 
 contract WalletPlanner is ERC721Base, AutomationCompatible {
     struct Intent {
-        uint256 id;
         address user;
         string description;
         uint256 estimatedCost;
-        bool executed;
         uint256 timestamp;
         uint256 executionTime;
+        bool executed;
         bool isScheduled;
     }
 
@@ -20,14 +19,13 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
     mapping(uint256 => Intent) public intents;
     mapping(address => uint256[]) public userIntents;
 
-    uint256 public interval = 1 hours;
+    uint256 public constant INTERVAL = 1 hours;
     uint256 public lastChecked;
     address public functionsConsumer;
 
     event IntentCreated(uint256 indexed intentId, address indexed user, string description);
     event IntentExecuted(uint256 indexed intentId, address indexed user);
     event AutomationPerformed(uint256 timestamp, uint256 intentsProcessed);
-    event FunctionsConsumerUpdated(address indexed oldConsumer, address indexed newConsumer);
 
     constructor(
         address _defaultAdmin,
@@ -52,18 +50,16 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
         uint256 intentId = _nextIntentId++;
 
         intents[intentId] = Intent({
-            id: intentId,
             user: msg.sender,
             description: _description,
             estimatedCost: _estimatedCost,
-            executed: false,
             timestamp: block.timestamp,
             executionTime: 0,
+            executed: false,
             isScheduled: false
         });
 
         userIntents[msg.sender].push(intentId);
-
         emit IntentCreated(intentId, msg.sender, _description);
         return intentId;
     }
@@ -73,23 +69,21 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
         uint256 _estimatedCost,
         uint256 _executionTime
     ) external returns (uint256) {
-        require(_executionTime > block.timestamp, "Execution time must be in the future");
+        require(_executionTime > block.timestamp, "Invalid execution time");
 
         uint256 intentId = _nextIntentId++;
 
         intents[intentId] = Intent({
-            id: intentId,
             user: msg.sender,
             description: _description,
             estimatedCost: _estimatedCost,
-            executed: false,
             timestamp: block.timestamp,
             executionTime: _executionTime,
+            executed: false,
             isScheduled: true
         });
 
         userIntents[msg.sender].push(intentId);
-
         emit IntentCreated(intentId, msg.sender, _description);
         return intentId;
     }
@@ -101,7 +95,6 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
 
         intent.executed = true;
         _mint(msg.sender, 1);
-
         emit IntentExecuted(_intentId, msg.sender);
     }
 
@@ -114,15 +107,12 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
     }
 
     function checkUpkeep(bytes calldata) external view override returns (bool upkeepNeeded, bytes memory performData) {
-        bool timeElapsed = (block.timestamp - lastChecked) > interval;
+        bool timeElapsed = (block.timestamp - lastChecked) > INTERVAL;
         uint256 readyCount = 0;
 
-        // Count ready intents (simplified to avoid large arrays)
-        for (uint256 i = 0; i < _nextIntentId && readyCount < 10; i++) {
+        for (uint256 i = 0; i < _nextIntentId && readyCount < 5; i++) {
             Intent storage intent = intents[i];
-            if (intent.isScheduled && 
-                !intent.executed && 
-                block.timestamp >= intent.executionTime) {
+            if (intent.isScheduled && !intent.executed && block.timestamp >= intent.executionTime) {
                 readyCount++;
             }
         }
@@ -138,11 +128,7 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
 
         for (uint256 i = 0; i < _nextIntentId && processed < readyCount; i++) {
             Intent storage intent = intents[i];
-
-            if (intent.isScheduled && 
-                !intent.executed && 
-                block.timestamp >= intent.executionTime) {
-
+            if (intent.isScheduled && !intent.executed && block.timestamp >= intent.executionTime) {
                 intent.executed = true;
                 processed++;
                 _mint(intent.user, 1);
@@ -153,14 +139,8 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
         emit AutomationPerformed(block.timestamp, processed);
     }
 
-    function setAutomationInterval(uint256 _interval) external onlyOwner {
-        interval = _interval;
-    }
-
     function setFunctionsConsumer(address _functionsConsumer) external onlyOwner {
-        address oldConsumer = functionsConsumer;
         functionsConsumer = _functionsConsumer;
-        emit FunctionsConsumerUpdated(oldConsumer, _functionsConsumer);
     }
 
     function _canMint() internal view virtual override returns (bool) {
