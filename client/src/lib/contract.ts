@@ -2,8 +2,8 @@ import { ethers } from "ethers";
 
 // Contract configuration
 export const CONTRACT_CONFIG = {
-  // You'll need to update this address after deploying the contract
-  address: "0x088B1658189B03A919af0521608f76c0a6e1397F", // Deployed on Sepolia
+  // Updated with locally deployed contract address
+  address: "0x5FbDB2315678afecb367f032d93F642f64180aa3", // Deployed on local Hardhat network
   abi: [
     "function createIntent(string memory description, uint256 estimatedCost) external returns (uint256)",
     "function executeIntent(uint256 intentId) external",

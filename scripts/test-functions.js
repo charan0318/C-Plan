@@ -4,7 +4,7 @@ import fs from "fs";
 const { ethers } = hre;
 
 async function main() {
-  const contractAddress = "0x5df2E434371136108d73EF1153d5CDFA13d01d52"; // Update this after deployment
+  const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3"; // Updated with local deployment
   const subscriptionId = "5225"; // Update this with your subscription ID
   
   console.log("Testing Chainlink Functions integration...");
