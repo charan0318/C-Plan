@@ -1,0 +1,90 @@
+Setting Up the Frontend (Replit)
+If you're using Replit, you can create the frontend using React or Vanilla JavaScript, and Replit will handle hosting it. The steps below guide you through setting up the React frontend for your dApp.
+
+Step 1: Initialize a Frontend Project (React) in Replit
+Open Replit and create a new project.
+
+Choose React as the template to create the app.
+
+Alternatively, if you're working with plain HTML/JS, create an HTML/CSS/JS project.
+
+Install ethers.js for interacting with your smart contract:
+
+bash
+Copy
+Edit
+npm install ethers
+Step 2: Connect to Ethereum (Sepolia Testnet)
+In your React project, use ethers.js to connect to the Ethereum testnet (Sepolia or Mumbai).
+
+In App.js, set up the connection:
+
+javascript
+Copy
+Edit
+import React, { useEffect, useState } from 'react';
+import { ethers } from 'ethers';
+
+function App() {
+  const [account, setAccount] = useState(null);
+  const [contract, setContract] = useState(null);
+
+  // Set up contract ABI and address (replace with actual contract address and ABI)
+  const contractAddress = "YOUR_DEPLOYED_CONTRACT_ADDRESS";
+  const contractABI = [
+    // ABI JSON (replace with your actual ABI)
+  ];
+
+  useEffect(() => {
+    const connectWallet = async () => {
+      if (window.ethereum) {
+        try {
+          const provider = new ethers.providers.Web3Provider(window.ethereum);
+          await provider.send("eth_requestAccounts", []);
+          const signer = provider.getSigner();
+          const userAccount = await signer.getAddress();
+          setAccount(userAccount);
+          const contractInstance = new ethers.Contract(contractAddress, contractABI, signer);
+          setContract(contractInstance);
+        } catch (err) {
+          console.error("Error connecting to wallet", err);
+        }
+      } else {
+        console.log("Please install MetaMask");
+      }
+    };
+    
+    connectWallet();
+  }, []);
+
+  // Sample function to interact with the contract (e.g., createIntent)
+  const createIntent = async () => {
+    if (contract) {
+      try {
+        const tx = await contract.createIntent("Sample Intent", 100, "Sample description", {
+          value: ethers.utils.parseEther("0.1"),
+        });
+        console.log("Transaction Hash:", tx.hash);
+      } catch (err) {
+        console.error("Error creating intent", err);
+      }
+    }
+  };
+
+  return (
+    <div className="App">
+      <h1>Wallet Planner</h1>
+      {account ? <p>Connected as: {account}</p> : <p>Connect Wallet</p>}
+      <button onClick={createIntent}>Create Intent</button>
+    </div>
+  );
+}
+
+export default App;
+Step 3: Update ABI and Contract Address
+ABI: This is the Application Binary Interface (a JSON file) generated when you compile your smart contract. You should have this from the compilation output.
+
+Contract Address: Use the address that you got when you deployed the contract to the testnet.
+
+Step 4: Integrate Wallet (e.g., MetaMask)
+Make sure to prompt users to connect their wallet (MetaMask or another Web3 wallet) so they can interact with your smart contract.
