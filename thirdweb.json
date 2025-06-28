@@ -11,5 +11,11 @@
     "factoryDeploymentData": {
       "implementationInitializerFunction": "initialize"
     }
-  }
+  },
+  "contracts": [
+    {
+      "name": "WalletPlanner",
+      "path": "contracts/WalletPlanner.sol"
+    }
+  ]
 }
