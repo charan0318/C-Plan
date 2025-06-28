@@ -66,7 +66,7 @@ contract WalletPlanner is ERC721Base {
         intent.executed = true;
         
         // Mint NFT as proof of execution
-        _mintTo(msg.sender, "");
+        mintTo(msg.sender, "");
         
         emit IntentExecuted(_intentId, msg.sender);
     }
