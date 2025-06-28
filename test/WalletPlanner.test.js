@@ -153,7 +153,7 @@ describe("WalletPlanner", function () {
       // Create a scheduled intent with execution time in the future, then advance time past it
       const description = "Test scheduled intent";
       const estimatedCost = ethers.parseEther("0.1");
-      const futureTime = Math.floor(Date.now() / 1000) + 10; // 10 seconds from now
+      const futureTime = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now
 
       await walletPlanner.connect(addr1).createScheduledIntent(
         description,
@@ -161,12 +161,8 @@ describe("WalletPlanner", function () {
         futureTime
       );
 
-      // Advance time past the execution time
-      await ethers.provider.send("evm_increaseTime", [15]); // 15 seconds
-      await ethers.provider.send("evm_mine");
-
-      // Advance time beyond the interval (since we already advanced time above)
-      await ethers.provider.send("evm_increaseTime", [3600]); // 1 hour
+      // Advance time past the execution time and beyond the interval
+      await ethers.provider.send("evm_increaseTime", [7200]); // 2 hours
       await ethers.provider.send("evm_mine");
 
       const [upkeepNeeded] = await walletPlanner.checkUpkeep("0x");
