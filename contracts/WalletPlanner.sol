@@ -4,9 +4,8 @@ pragma solidity ^0.8.21;
 
 import "@thirdweb-dev/contracts/base/ERC721Base.sol";
 import "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
 
-contract WalletPlanner is ERC721Base, AutomationCompatible, AccessControl {
+contract WalletPlanner is ERC721Base, AutomationCompatible {
     struct Intent {
         uint256 id;
         address user;
@@ -46,9 +45,7 @@ contract WalletPlanner is ERC721Base, AutomationCompatible, AccessControl {
             _royaltyRecipient,
             _royaltyBps
         )
-    {
-        _grantRole(DEFAULT_ADMIN_ROLE, _defaultAdmin);
-    }
+    {}
     
     function createIntent(
         string memory _description,
@@ -185,13 +182,11 @@ contract WalletPlanner is ERC721Base, AutomationCompatible, AccessControl {
     }
     
     // Admin functions
-    function setAutomationInterval(uint256 _interval) external {
-        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Not authorized");
+    function setAutomationInterval(uint256 _interval) external onlyOwner {
         interval = _interval;
     }
     
-    function setFunctionsConsumer(address _functionsConsumer) external {
-        require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender), "Not authorized");
+    function setFunctionsConsumer(address _functionsConsumer) external onlyOwner {
         address oldConsumer = functionsConsumer;
         functionsConsumer = _functionsConsumer;
         emit FunctionsConsumerUpdated(oldConsumer, _functionsConsumer);
