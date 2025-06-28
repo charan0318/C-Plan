@@ -178,7 +178,7 @@ export default function Settings() {
                     WalletPlanner Contract:
                   </span>
                   <span className="text-sm font-mono text-gray-900 dark:text-gray-100">
-                    0x088B1658189B03A919af0521608f76c0a6e1397F
+                    0xCA0d255BC0c66E3dDD974EA5E260E690d17c22aa
                   </span>
                 </div>
                 <div className="flex justify-between items-center">

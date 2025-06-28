@@ -4,7 +4,7 @@ import fs from "fs";
 const { ethers } = hre;
 
 async function main() {
-  const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3"; // Updated with local deployment
+  const contractAddress = "0xCA0d255BC0c66E3dDD974EA5E260E690d17c22aa"; // Updated with Sepolia deployment
   const subscriptionId = "5225"; // Update this with your subscription ID
   
   console.log("Testing Chainlink Functions integration...");
