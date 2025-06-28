@@ -6,6 +6,7 @@ import "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol";
 
 contract WalletPlanner is ERC721Base, AutomationCompatible {
     struct Intent {
+        uint256 id;
         address user;
         string description;
         uint256 estimatedCost;
@@ -50,6 +51,7 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
         uint256 intentId = _nextIntentId++;
 
         intents[intentId] = Intent({
+            id: intentId,
             user: msg.sender,
             description: _description,
             estimatedCost: _estimatedCost,
@@ -69,11 +71,12 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
         uint256 _estimatedCost,
         uint256 _executionTime
     ) external returns (uint256) {
-        require(_executionTime > block.timestamp, "Invalid execution time");
+        require(_executionTime > block.timestamp, "Execution time must be in the future");
 
         uint256 intentId = _nextIntentId++;
 
         intents[intentId] = Intent({
+            id: intentId,
             user: msg.sender,
             description: _description,
             estimatedCost: _estimatedCost,

@@ -331,8 +331,8 @@ describe("WalletPlanner", function () {
       const intent0 = await walletPlanner.getIntent(0);
       const intent1 = await walletPlanner.getIntent(1);
 
-      expect(intent0.user).to.equal(addr1.address);
-      expect(intent1.user).to.equal(addr2.address);
+      expect(intent0.id).to.equal(0);
+      expect(intent1.id).to.equal(1);
     });
   });
 
