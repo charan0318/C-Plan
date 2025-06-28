@@ -3,9 +3,8 @@
 pragma solidity ^0.8.21;
 
 import "@thirdweb-dev/contracts/base/ERC721Base.sol";
-import "@thirdweb-dev/contracts/extension/Ownable.sol";
 
-contract WalletPlanner is ERC721Base, Ownable {
+contract WalletPlanner is ERC721Base {
     struct Intent {
         uint256 id;
         address user;
@@ -36,9 +35,7 @@ contract WalletPlanner is ERC721Base, Ownable {
             _royaltyRecipient,
             _royaltyBps
         )
-    {
-        _setupOwner(_defaultAdmin);
-    }
+    {}
     
     function createIntent(
         string memory _description,
