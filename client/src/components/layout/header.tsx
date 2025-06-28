@@ -32,33 +32,41 @@ export function Header() {
               <span className="text-xl font-bold text-gray-900 dark:text-white">C-PLAN</span>
             </Link>
             <nav className="hidden md:flex space-x-6">
-              <Link href="/" className={`font-medium transition-colors ${
+              <Link href="/">
+                <span className={`font-medium transition-colors ${
                   isActive("/") 
                     ? "text-primary border-b-2 border-primary pb-1" 
                     : "text-gray-600 dark:text-gray-300 hover:text-primary"
                 }`}>
                   Home
+                </span>
               </Link>
-              <Link href="/planner" className={`font-medium transition-colors ${
+              <Link href="/planner">
+                <span className={`font-medium transition-colors ${
                   isActive("/planner") 
                     ? "text-primary border-b-2 border-primary pb-1" 
                     : "text-gray-600 dark:text-gray-300 hover:text-primary"
                 }`}>
                   Planner
+                </span>
               </Link>
-              <Link href="/dashboard" className={`font-medium transition-colors ${
+              <Link href="/dashboard">
+                <span className={`font-medium transition-colors ${
                   isActive("/dashboard") 
                     ? "text-primary border-b-2 border-primary pb-1" 
                     : "text-gray-600 dark:text-gray-300 hover:text-primary"
                 }`}>
                   Dashboard
+                </span>
               </Link>
-              <Link href="/settings" className={`font-medium transition-colors ${
+              <Link href="/settings">
+                <span className={`font-medium transition-colors ${
                   isActive("/settings") 
                     ? "text-primary border-b-2 border-primary pb-1" 
                     : "text-gray-600 dark:text-gray-300 hover:text-primary"
                 }`}>
                   Settings
+                </span>
               </Link>
             </nav>
           </div>

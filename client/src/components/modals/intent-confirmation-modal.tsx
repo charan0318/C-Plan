@@ -89,7 +89,7 @@ export function IntentConfirmationModal({
         <DialogHeader>
           <DialogTitle>Confirm Intent</DialogTitle>
           <DialogDescription>
-            Review and confirm the details of your automation intent before creating it.
+            Review and confirm the details of your automation intent before creating it. This will create a new automation plan that will execute according to your specified conditions.
           </DialogDescription>
         </DialogHeader>
 
