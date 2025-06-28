@@ -65,8 +65,8 @@ contract WalletPlanner is ERC721Base {
         
         intent.executed = true;
         
-        // Mint NFT as proof of execution using Thirdweb's mintTo
-        mintTo(msg.sender, "");
+        // Mint NFT as proof of execution - use internal _mint for direct minting
+        _mint(msg.sender, _nextTokenId());
         
         emit IntentExecuted(_intentId, msg.sender);
     }
@@ -77,5 +77,10 @@ contract WalletPlanner is ERC721Base {
     
     function getIntent(uint256 _intentId) external view returns (Intent memory) {
         return intents[_intentId];
+    }
+    
+    // Override to allow anyone to mint through intent execution
+    function _canMint() internal view virtual override returns (bool) {
+        return true;
     }
 }
