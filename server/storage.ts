@@ -155,8 +155,11 @@ export class MemStorage implements IStorage {
   async createWalletConnection(connection: InsertWalletConnection): Promise<WalletConnection> {
     const id = this.currentId++;
     const walletConnection: WalletConnection = { 
-      ...connection, 
       id,
+      userId: connection.userId,
+      walletAddress: connection.walletAddress,
+      chainId: connection.chainId,
+      isActive: connection.isActive ?? true,
       createdAt: new Date()
     };
     this.walletConnections.set(id, walletConnection);
@@ -185,8 +188,20 @@ export class MemStorage implements IStorage {
   async createIntent(intent: InsertIntent): Promise<Intent> {
     const id = this.currentId++;
     const newIntent: Intent = { 
-      ...intent, 
       id,
+      userId: intent.userId,
+      walletAddress: intent.walletAddress,
+      title: intent.title,
+      description: intent.description,
+      action: intent.action,
+      token: intent.token,
+      amount: intent.amount || null,
+      frequency: intent.frequency || null,
+      conditions: intent.conditions || null,
+      targetChain: intent.targetChain,
+      isActive: intent.isActive ?? true,
+      nextExecution: intent.nextExecution || null,
+      lastExecution: intent.lastExecution || null,
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -216,8 +231,12 @@ export class MemStorage implements IStorage {
   async createExecutionHistory(history: InsertExecutionHistory): Promise<ExecutionHistory> {
     const id = this.currentId++;
     const executionHistory: ExecutionHistory = { 
-      ...history, 
       id,
+      intentId: history.intentId,
+      status: history.status,
+      result: history.result || null,
+      gasUsed: history.gasUsed || null,
+      transactionHash: history.transactionHash || null,
       executedAt: new Date()
     };
     this.executionHistory.set(id, executionHistory);
@@ -233,8 +252,11 @@ export class MemStorage implements IStorage {
   async createChatMessage(message: InsertChatMessage): Promise<ChatMessage> {
     const id = this.currentId++;
     const chatMessage: ChatMessage = { 
-      ...message, 
       id,
+      userId: message.userId,
+      message: message.message,
+      isAgent: message.isAgent ?? false,
+      agentResponse: message.agentResponse || null,
       createdAt: new Date()
     };
     this.chatMessages.set(id, chatMessage);

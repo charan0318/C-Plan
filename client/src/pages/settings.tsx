@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useWallet } from "@/hooks/use-wallet";
-import { formatAddress, SUPPORTED_CHAINS } from "@/lib/wallet";
+import { formatAddress } from "@/lib/wallet";
+import { SUPPORTED_CHAINS } from "@/types/wallet";
 import { Wallet, Network, Settings as SettingsIcon } from "lucide-react";
 import type { WalletConnection } from "@/types/wallet";
 
