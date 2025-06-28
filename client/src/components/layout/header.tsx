@@ -32,45 +32,37 @@ export function Header() {
               <span className="text-xl font-bold text-gray-900 dark:text-white">C-PLAN</span>
             </Link>
             <nav className="hidden md:flex space-x-6">
-              <Link href="/">
-                <a className={`font-medium transition-colors ${
+              <Link href="/" className={`font-medium transition-colors ${
                   isActive("/") 
                     ? "text-primary border-b-2 border-primary pb-1" 
                     : "text-gray-600 dark:text-gray-300 hover:text-primary"
                 }`}>
                   Home
-                </a>
               </Link>
-              <Link href="/planner">
-                <a className={`font-medium transition-colors ${
+              <Link href="/planner" className={`font-medium transition-colors ${
                   isActive("/planner") 
                     ? "text-primary border-b-2 border-primary pb-1" 
                     : "text-gray-600 dark:text-gray-300 hover:text-primary"
                 }`}>
                   Planner
-                </a>
               </Link>
-              <Link href="/dashboard">
-                <a className={`font-medium transition-colors ${
+              <Link href="/dashboard" className={`font-medium transition-colors ${
                   isActive("/dashboard") 
                     ? "text-primary border-b-2 border-primary pb-1" 
                     : "text-gray-600 dark:text-gray-300 hover:text-primary"
                 }`}>
                   Dashboard
-                </a>
               </Link>
-              <Link href="/settings">
-                <a className={`font-medium transition-colors ${
+              <Link href="/settings" className={`font-medium transition-colors ${
                   isActive("/settings") 
                     ? "text-primary border-b-2 border-primary pb-1" 
                     : "text-gray-600 dark:text-gray-300 hover:text-primary"
                 }`}>
                   Settings
-                </a>
               </Link>
             </nav>
           </div>
-          
+
           {/* Theme Toggle and Wallet Connection */}
           <div className="flex items-center space-x-4">
             <Button

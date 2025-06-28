@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -87,8 +88,11 @@ export function IntentConfirmationModal({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Confirm Intent</DialogTitle>
+          <DialogDescription>
+            Review and confirm the details of your automation intent before creating it.
+          </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-4">
           <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
             <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">
@@ -131,7 +135,7 @@ export function IntentConfirmationModal({
               )}
             </div>
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Target Chain
@@ -156,7 +160,7 @@ export function IntentConfirmationModal({
             </Select>
           </div>
         </div>
-        
+
         <div className="flex space-x-3 mt-6">
           <Button
             onClick={onClose}
@@ -184,11 +188,11 @@ export function IntentConfirmationModal({
 
 function generateDescription(intent: any): string {
   let description = `${intent.action} ${intent.amount || ""} ${intent.token}`.trim();
-  
+
   if (intent.frequency && intent.frequency !== "CONDITION_BASED") {
     description += ` ${intent.frequency.toLowerCase()}`;
   }
-  
+
   if (intent.conditions && Object.keys(intent.conditions).length > 0) {
     const conditionStrings = Object.entries(intent.conditions).map(([key, value]) => {
       if (key === "gasPrice" && typeof value === "object" && value.max) {
@@ -198,13 +202,13 @@ function generateDescription(intent: any): string {
     });
     description += ` ${conditionStrings.join(", ")}`;
   }
-  
+
   return description;
 }
 
 function calculateNextExecution(frequency: string): Date {
   const now = new Date();
-  
+
   switch (frequency) {
     case "DAILY":
       return new Date(now.getTime() + 24 * 60 * 60 * 1000);
