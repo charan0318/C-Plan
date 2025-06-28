@@ -3,7 +3,7 @@ import { ethers } from "ethers";
 // Contract configuration
 export const CONTRACT_CONFIG = {
   // You'll need to update this address after deploying the contract
-  address: "0x0000000000000000000000000000000000000000", // Placeholder - will be updated after deployment
+  address: "0x088B1658189B03A919af0521608f76c0a6e1397F", // Deployed on Sepolia
   abi: [
     "function createIntent(string memory description, uint256 estimatedCost) external returns (uint256)",
     "function executeIntent(uint256 intentId) external",

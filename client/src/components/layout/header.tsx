@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { WalletConnect } from "@/components/wallet/wallet-connect";
 import { Brain, Sun, Moon } from "lucide-react";
 
-export function Header() {
+export default function Header() {
   const [location] = useLocation();
   const [isDark, setIsDark] = useState(false);
 
