@@ -1,47 +1,50 @@
-import { Switch, Route } from "wouter";
-import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Route, Switch } from "wouter";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Header } from "@/components/layout/header";
-import { Footer } from "@/components/layout/footer";
+import { Toaster } from "@/components/ui/toaster";
+import Header from "@/components/layout/header";
+import Footer from "@/components/layout/footer";
+
 import Home from "@/pages/home";
-import Planner from "@/pages/planner";
 import Dashboard from "@/pages/dashboard";
+import Planner from "@/pages/planner";
 import Settings from "@/pages/settings";
 import About from "@/pages/about";
-import IntentDetails from "@/pages/intent-details";
 import NotFound from "@/pages/not-found";
+import IntentDetails from "@/pages/intent-details";
 
-function Router() {
-  return (
-    <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/planner" component={Planner} />
-      <Route path="/dashboard" component={Dashboard} />
-      <Route path="/intent/:id" component={IntentDetails} />
-      <Route path="/settings" component={Settings} />
-      <Route path="/about" component={About} />
-      <Route component={NotFound} />
-    </Switch>
-  );
-}
+// Create QueryClient instance outside component to avoid recreation
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+      staleTime: 30000, // 30 seconds
+    },
+  },
+});
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <div className="min-h-screen flex flex-col bg-background text-foreground">
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col">
           <Header />
-          <main className="flex-1">
-            <Router />
+          <main className="flex-grow">
+            <Switch>
+              <Route path="/" component={Home} />
+              <Route path="/dashboard" component={Dashboard} />
+              <Route path="/planner" component={Planner} />
+              <Route path="/settings" component={Settings} />
+              <Route path="/about" component={About} />
+              <Route path="/intent/:id" component={IntentDetails} />
+              <Route component={NotFound} />
+            </Switch>
           </main>
           <Footer />
+          <Toaster />
         </div>
-        <Toaster />
       </TooltipProvider>
     </QueryClientProvider>
   );
 }
-
-export default App;

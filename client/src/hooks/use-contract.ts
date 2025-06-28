@@ -1,113 +1,106 @@
 
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ethers } from "ethers";
 import { useWallet } from "./use-wallet";
-import { 
-  createIntent as createIntentContract,
-  executeIntent as executeIntentContract,
-  getUserIntents,
-  getIntentById,
-  getNFTBalance
-} from "@/lib/contract";
-import { useToast } from "./use-toast";
+import { getContract, CONTRACT_CONFIG } from "@/lib/contract";
+import type { Intent } from "@/types/intent";
 
 export function useContract() {
-  const { signer, address, isConnected } = useWallet();
-  const { toast } = useToast();
+  const { provider, signer, address, isConnected } = useWallet();
+  const [isLoading, setIsLoading] = useState(false);
   const queryClient = useQueryClient();
-  const [isTransactionPending, setIsTransactionPending] = useState(false);
 
-  // Query user intents
-  const { data: userIntents = [], isLoading: isLoadingIntents } = useQuery({
-    queryKey: ["userIntents", address],
-    queryFn: () => getUserIntents(address!),
-    enabled: !!address,
-    refetchInterval: 10000 // Refresh every 10 seconds
-  });
-
-  // Query NFT balance
-  const { data: nftBalance = 0, isLoading: isLoadingBalance } = useQuery({
-    queryKey: ["nftBalance", address],
-    queryFn: () => getNFTBalance(address!),
-    enabled: !!address,
-    refetchInterval: 10000
-  });
+  // Get contract instance
+  const getContractInstance = () => {
+    if (!provider || !signer) {
+      throw new Error("Wallet not connected");
+    }
+    return getContract(provider, signer);
+  };
 
   // Create intent mutation
   const createIntentMutation = useMutation({
     mutationFn: async ({ description, estimatedCost }: { description: string; estimatedCost: string }) => {
-      if (!signer) throw new Error("No signer available");
-      return createIntentContract(signer, description, estimatedCost);
+      const contract = getContractInstance();
+      const costInWei = ethers.parseEther(estimatedCost);
+      
+      const tx = await contract.createIntent(description, costInWei);
+      const receipt = await tx.wait();
+      
+      return { tx, receipt };
     },
-    onMutate: () => {
-      setIsTransactionPending(true);
-    },
-    onSuccess: (data) => {
-      toast({
-        title: "Intent Created",
-        description: `Intent created successfully! Transaction: ${data.transactionHash?.slice(0, 10)}...`,
-      });
-      queryClient.invalidateQueries({ queryKey: ["userIntents", address] });
-      setIsTransactionPending(false);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Failed to Create Intent",
-        description: error.message || "An error occurred while creating the intent",
-        variant: "destructive",
-      });
-      setIsTransactionPending(false);
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-intents'] });
     }
   });
 
   // Execute intent mutation
   const executeIntentMutation = useMutation({
     mutationFn: async (intentId: number) => {
-      if (!signer) throw new Error("No signer available");
-      return executeIntentContract(signer, intentId);
+      const contract = getContractInstance();
+      
+      const tx = await contract.executeIntent(intentId);
+      const receipt = await tx.wait();
+      
+      return { tx, receipt };
     },
-    onMutate: () => {
-      setIsTransactionPending(true);
-    },
-    onSuccess: (data) => {
-      toast({
-        title: "Intent Executed",
-        description: `Intent executed successfully! NFT minted. Transaction: ${data.transactionHash?.slice(0, 10)}...`,
-      });
-      queryClient.invalidateQueries({ queryKey: ["userIntents", address] });
-      queryClient.invalidateQueries({ queryKey: ["nftBalance", address] });
-      setIsTransactionPending(false);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Failed to Execute Intent",
-        description: error.message || "An error occurred while executing the intent",
-        variant: "destructive",
-      });
-      setIsTransactionPending(false);
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-intents'] });
+      queryClient.invalidateQueries({ queryKey: ['nft-balance'] });
     }
   });
 
-  // Get specific intent
-  const getIntent = async (intentId: number) => {
-    return getIntentById(intentId);
-  };
+  // Get user intents query
+  const { data: userIntents = [], isLoading: isLoadingIntents } = useQuery({
+    queryKey: ['user-intents', address],
+    queryFn: async (): Promise<Intent[]> => {
+      if (!provider || !address) return [];
+      
+      const contract = getContract(provider);
+      const intentIds = await contract.getUserIntents(address);
+      
+      const intents = await Promise.all(
+        intentIds.map(async (id: bigint) => {
+          const intent = await contract.getIntent(id);
+          return {
+            id: Number(intent.id),
+            user: intent.user,
+            description: intent.description,
+            estimatedCost: ethers.formatEther(intent.estimatedCost),
+            executed: intent.executed,
+            timestamp: new Date(Number(intent.timestamp) * 1000)
+          };
+        })
+      );
+      
+      return intents;
+    },
+    enabled: isConnected && !!address && CONTRACT_CONFIG.address !== "0x0000000000000000000000000000000000000000"
+  });
+
+  // Get NFT balance query
+  const { data: nftBalance = 0 } = useQuery({
+    queryKey: ['nft-balance', address],
+    queryFn: async (): Promise<number> => {
+      if (!provider || !address) return 0;
+      
+      const contract = getContract(provider);
+      const balance = await contract.balanceOf(address);
+      return Number(balance);
+    },
+    enabled: isConnected && !!address && CONTRACT_CONFIG.address !== "0x0000000000000000000000000000000000000000"
+  });
 
   return {
-    // Data
+    isLoading: isLoading || isLoadingIntents,
     userIntents,
     nftBalance,
-    isLoadingIntents,
-    isLoadingBalance,
-    isTransactionPending,
-    
-    // Actions
     createIntent: createIntentMutation.mutateAsync,
     executeIntent: executeIntentMutation.mutateAsync,
-    getIntent,
-    
-    // State
-    isConnected,
-    canInteract: isConnected && !!signer
+    isCreatingIntent: createIntentMutation.isPending,
+    isExecutingIntent: executeIntentMutation.isPending,
+    contractAddress: CONTRACT_CONFIG.address,
+    isContractDeployed: CONTRACT_CONFIG.address !== "0x0000000000000000000000000000000000000000"
   };
 }
