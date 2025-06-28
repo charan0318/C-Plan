@@ -32,7 +32,7 @@ export default function Settings() {
             Manage your wallet connections and preferences
           </p>
         </div>
-        
+
         <div className="space-y-8">
           {/* Wallet Connection Card */}
           <Card>
@@ -72,7 +72,7 @@ export default function Settings() {
                     </p>
                   </div>
                 )}
-                
+
                 {isConnected && (
                   <Button 
                     onClick={disconnectWallet}
@@ -85,7 +85,7 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
-          
+
           {/* Network Settings */}
           <Card>
             <CardHeader>
@@ -123,7 +123,7 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
-          
+
           {/* Developer Settings */}
           <Card>
             <CardHeader>
@@ -165,7 +165,7 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
-          
+
           {/* Contract Information */}
           <Card>
             <CardHeader>
@@ -178,7 +178,7 @@ export default function Settings() {
                     WalletPlanner Contract:
                   </span>
                   <span className="text-sm font-mono text-gray-900 dark:text-gray-100">
-                    0x1234...5678
+                    0xc6e8fa9876bd309D02af4d76d0b868C552146B07
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
