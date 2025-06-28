@@ -16,9 +16,21 @@ async function main() {
   // Read the JavaScript source
   const source = fs.readFileSync("functions/intent-analyzer.js", "utf8");
 
-  // Test parameters
+  // Test with ElizaOS parsed intent
+  const elizaParsedIntent = {
+    task: "stake",
+    token: "USDC",
+    amount: 100,
+    frequency: "weekly",
+    condition: {
+      type: "gas",
+      threshold: 20,
+      comparison: "<"
+    }
+  };
+  
   const args = [
-    "Stake 100 USDC weekly when gas < 20 gwei",
+    JSON.stringify(elizaParsedIntent), // ElizaOS parsed intent
     "50", // estimated cost in USD
     "0x742d35Cc6644C4532B0C1234567890abCdEF1234" // example user address
   ];

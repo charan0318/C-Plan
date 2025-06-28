@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertIntentSchema, insertChatMessageSchema } from "@shared/schema";
+import { elizaService } from "./elizaService";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get user's wallet connections
@@ -124,8 +125,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         agentResponse: null
       });
 
-      // Mock AI agent response
-      const agentResponse = generateAgentResponse(message);
+      // Use ElizaOS to parse intent
+      const parsedIntent = await elizaService.parseIntent(message);
+      
+      let agentResponse;
+      if (parsedIntent && await elizaService.validateIntent(parsedIntent)) {
+        agentResponse = {
+          message: `Perfect! I've analyzed your request using ElizaOS:\n\n**Task:** ${parsedIntent.task.toUpperCase()}\n**Token:** ${parsedIntent.token}${parsedIntent.amount ? `\n**Amount:** ${parsedIntent.amount}` : ''}${parsedIntent.frequency ? `\n**Frequency:** ${parsedIntent.frequency.toUpperCase()}` : ''}${parsedIntent.day ? `\n**Day:** ${parsedIntent.day}` : ''}${parsedIntent.receiver ? `\n**Receiver:** ${parsedIntent.receiver}` : ''}${parsedIntent.condition ? `\n**Condition:** ${parsedIntent.condition.type} ${parsedIntent.condition.comparison} ${parsedIntent.condition.threshold}` : ''}\n\nShall I create this automation plan for you?`,
+          parsedIntent: {
+            action: parsedIntent.task.toUpperCase(),
+            token: parsedIntent.token,
+            amount: parsedIntent.amount?.toString(),
+            frequency: parsedIntent.frequency?.toUpperCase() || "WEEKLY",
+            conditions: parsedIntent.condition || {}
+          }
+        };
+      } else {
+        agentResponse = {
+          message: "I'm having trouble understanding your intent. Could you please be more specific? For example:\n\n• 'Stake 100 USDC weekly when gas < 20 gwei'\n• 'Send 50 DAI every month to 0x...'\n• 'Remind me when ETH drops below $2000'",
+          parsedIntent: null
+        };
+      }
       
       // Save agent response
       const agentMessage = await storage.createChatMessage({
