@@ -150,19 +150,23 @@ describe("WalletPlanner", function () {
     });
 
     it("Should return true for checkUpkeep when scheduled intents are ready", async function () {
-      // Create a scheduled intent with execution time in the past
+      // Create a scheduled intent with execution time in the future, then advance time past it
       const description = "Test scheduled intent";
       const estimatedCost = ethers.parseEther("0.1");
-      const pastTime = Math.floor(Date.now() / 1000) - 1; // 1 second ago
+      const futureTime = Math.floor(Date.now() / 1000) + 10; // 10 seconds from now
 
       await walletPlanner.connect(addr1).createScheduledIntent(
         description,
         estimatedCost,
-        pastTime
+        futureTime
       );
 
-      // Advance time beyond the interval
-      await ethers.provider.send("evm_increaseTime", [3601]); // 1 hour + 1 second
+      // Advance time past the execution time
+      await ethers.provider.send("evm_increaseTime", [15]); // 15 seconds
+      await ethers.provider.send("evm_mine");
+
+      // Advance time beyond the interval (since we already advanced time above)
+      await ethers.provider.send("evm_increaseTime", [3600]); // 1 hour
       await ethers.provider.send("evm_mine");
 
       const [upkeepNeeded] = await walletPlanner.checkUpkeep("0x");
@@ -171,6 +175,11 @@ describe("WalletPlanner", function () {
   });
 
   describe("Intent Execution", function () {
+    beforeEach(async function () {
+      // Create an intent for execution tests
+      await walletPlanner.connect(addr1).createIntent("Test intent for execution", ethers.parseEther("0.1"));
+    });
+
     it("Should allow intent owner to execute their intent", async function () {
       const tx = await walletPlanner.connect(addr1).executeIntent(0);
       const receipt = await tx.wait();
