@@ -1,4 +1,6 @@
 
+const { ethers } = require("hardhat");
+
 async function main() {
   const [deployer] = await ethers.getSigners();
   
@@ -10,19 +12,27 @@ async function main() {
   console.log("Deploying WalletPlanner...");
   
   const walletPlanner = await WalletPlanner.deploy();
-  await walletPlanner.deployed();
+  await walletPlanner.waitForDeployment();
 
-  console.log("WalletPlanner contract deployed to:", walletPlanner.address);
+  const contractAddress = await walletPlanner.getAddress();
+  console.log("WalletPlanner contract deployed to:", contractAddress);
   
   // Save deployment info
   const deploymentInfo = {
     network: network.name,
-    contractAddress: walletPlanner.address,
+    contractAddress: contractAddress,
     deployer: deployer.address,
     timestamp: new Date().toISOString()
   };
   
   console.log("Deployment info:", deploymentInfo);
+  
+  // Verify contract on etherscan if not on local network
+  if (network.name !== "hardhat" && network.name !== "localhost") {
+    console.log("Waiting for block confirmations...");
+    await walletPlanner.waitForDeployment();
+    console.log("Contract deployed and confirmed");
+  }
 }
 
 main()
