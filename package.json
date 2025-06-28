@@ -10,7 +10,9 @@
     "check": "tsc",
     "db:push": "drizzle-kit push",
     "test": "npx hardhat test",
-    "deploy": "npx hardhat run scripts/deploy.js --network sepolia"
+    "deploy": "npx hardhat run scripts/deploy.js --network sepolia",
+    "deploy:functions": "npx hardhat run scripts/deploy-functions.js --network sepolia",
+    "test:functions": "npx hardhat run scripts/test-functions.js --network sepolia"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
