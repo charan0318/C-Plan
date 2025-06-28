@@ -3,9 +3,9 @@
 pragma solidity ^0.8.21;
 
 import "@thirdweb-dev/contracts/base/ERC721Base.sol";
-import "@chainlink/contracts/src/v0.8/interfaces/AutomationCompatibleInterface.sol";
+import "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol";
 
-contract WalletPlanner is ERC721Base, AutomationCompatibleInterface {
+contract WalletPlanner is ERC721Base, AutomationCompatible {
     struct Intent {
         uint256 id;
         address user;
