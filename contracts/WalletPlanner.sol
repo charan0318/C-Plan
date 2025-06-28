@@ -35,10 +35,7 @@ contract WalletPlanner is ERC721Base {
             _royaltyRecipient,
             _royaltyBps
         )
-    {
-        // Grant minting role to this contract so it can mint NFTs on intent execution
-        _setupRole(keccak256("MINTER_ROLE"), address(this));
-    }
+    {}
     
     function createIntent(
         string memory _description,
@@ -68,8 +65,8 @@ contract WalletPlanner is ERC721Base {
         
         intent.executed = true;
         
-        // Mint NFT as proof of execution
-        _mintTo(msg.sender, "");
+        // Mint NFT as proof of execution using Thirdweb's mintTo
+        mintTo(msg.sender, "");
         
         emit IntentExecuted(_intentId, msg.sender);
     }
@@ -80,10 +77,5 @@ contract WalletPlanner is ERC721Base {
     
     function getIntent(uint256 _intentId) external view returns (Intent memory) {
         return intents[_intentId];
-    }
-    
-    // Override to allow contract to mint NFTs during intent execution
-    function _canMint() internal view virtual override returns (bool) {
-        return true;
     }
 }
