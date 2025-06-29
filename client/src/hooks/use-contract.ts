@@ -214,7 +214,7 @@ export function useContract() {
     enabled: !!address && !!walletState.provider && isContractDeployed
   });
 
-  // Get token balances - fetch directly from token contracts and deposited balances from smart contract
+  // Get token balances - clearly separate wallet balances from contract deposited balances
   const { data: tokenBalances = {}, refetch: refetchBalances } = useQuery({
     queryKey: ['token-balances', address],
     queryFn: async () => {
@@ -223,100 +223,32 @@ export function useContract() {
       console.log('🔄 Fetching token balances for address:', address);
       const balances: Record<string, string> = {};
 
-      // Get ETH balance
+      // First, get all WALLET balances (what shows in MetaMask)
+      console.log('📱 Fetching WALLET balances...');
+      
+      // Get ETH balance in wallet
       try {
         const ethBalance = await walletState.provider.getBalance(address);
         balances.ETH = ethers.formatEther(ethBalance);
-        console.log('✅ ETH balance fetched:', balances.ETH);
+        console.log('✅ ETH wallet balance:', balances.ETH);
       } catch (error) {
         console.error('❌ Error fetching ETH balance:', error);
         balances.ETH = '0';
       }
 
-      // Get deposited balances from smart contract if available (these are the balances used for DCA)
-      if (isContractDeployed) {
-        try {
-          const contract = getContract(walletState.provider);
-          console.log('📋 Fetching deposited balances from contract...');
-          
-          for (const [symbol, tokenAddress] of Object.entries(TOKENS)) {
-            try {
-              const depositedBalance = await contract.getUserBalance(address, tokenAddress);
-              // Use proper decimals for each token
-              const decimals = symbol === 'USDC' ? 6 : 18;
-              balances[`${symbol}_DEPOSITED`] = ethers.formatUnits(depositedBalance, decimals);
-              console.log(`📊 ${symbol} deposited balance: ${balances[`${symbol}_DEPOSITED`]} (raw: ${depositedBalance.toString()})`);
-            } catch (error) {
-              console.error(`❌ Error fetching ${symbol} deposited balance:`, error);
-              balances[`${symbol}_DEPOSITED`] = '0';
-            }
-          }
-
-          // Check ETH balance in contract (from DCA swaps) - try multiple approaches
-          try {
-            // Method 1: Direct ETH balance check
-            const ethInContract = await contract.getUserBalance(address, ethers.ZeroAddress);
-            balances['ETH_DEPOSITED'] = ethers.formatEther(ethInContract);
-            console.log(`🎯 ETH in contract (ZeroAddress): ${balances['ETH_DEPOSITED']} ETH (raw: ${ethInContract.toString()})`);
-            
-            // Method 2: Also try with explicit ETH address if different
-            try {
-              const ethInContract2 = await contract.getUserBalance(address, "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE");
-              const ethBalance2 = ethers.formatEther(ethInContract2);
-              console.log(`🎯 ETH in contract (EeeEE...): ${ethBalance2} ETH (raw: ${ethInContract2.toString()})`);
-              
-              // Use the higher balance
-              if (parseFloat(ethBalance2) > parseFloat(balances['ETH_DEPOSITED'])) {
-                balances['ETH_DEPOSITED'] = ethBalance2;
-              }
-            } catch (e) {
-              console.log('Alternative ETH address check failed, using ZeroAddress result');
-            }
-          } catch (error) {
-            console.error('❌ Error fetching ETH balance in contract:', error);
-            balances['ETH_DEPOSITED'] = '0';
-          }
-
-          // Check WETH balance in contract - enhanced fetching
-          try {
-            const wethInContract = await contract.getUserBalance(address, TOKENS.WETH);
-            balances['WETH_DEPOSITED'] = ethers.formatEther(wethInContract);
-            console.log(`🔄 WETH in contract: ${balances['WETH_DEPOSITED']} WETH (raw: ${wethInContract.toString()})`);
-            
-            // Also check WETH token contract directly for comparison
-            try {
-              const wethTokenContract = new ethers.Contract(
-                TOKENS.WETH,
-                ['function balanceOf(address) external view returns (uint256)'],
-                walletState.provider
-              );
-              const directWethBalance = await wethTokenContract.balanceOf(address);
-              const directWethFormatted = ethers.formatEther(directWethBalance);
-              console.log(`🔄 WETH direct from token contract: ${directWethFormatted} WETH`);
-            } catch (e) {
-              console.log('Direct WETH balance check failed');
-            }
-          } catch (error) {
-            console.error('❌ Error fetching WETH balance in contract:', error);
-            balances['WETH_DEPOSITED'] = '0';
-          }
-        } catch (error) {
-          console.error('❌ Error fetching deposited balances from contract:', error);
-        }
-      }
-
       // Get wallet token balances directly from token contracts
       for (const [symbol, tokenAddress] of Object.entries(TOKENS)) {
         try {
-          console.log(`🔍 Fetching ${symbol} wallet balance from contract:`, tokenAddress);
+          console.log(`🔍 Fetching ${symbol} wallet balance from:`, tokenAddress);
 
-          // Validate token address format
+          // Validate token address
           if (!tokenAddress || tokenAddress.length !== 42 || !tokenAddress.startsWith('0x')) {
             console.error(`❌ Invalid token address for ${symbol}:`, tokenAddress);
             balances[symbol] = '0';
             continue;
           }
 
+          // Create token contract instance
           const tokenContract = new ethers.Contract(
             tokenAddress,
             [
@@ -328,62 +260,83 @@ export function useContract() {
             walletState.provider
           );
 
-          // Get balance and decimals with retries for better reliability
-          let balance, decimals;
-          let attempts = 0;
-          const maxAttempts = 3;
-
-          while (attempts < maxAttempts) {
-            try {
-              // Get decimals first
-              if (symbol === 'USDC') {
-                decimals = 6; // USDC uses 6 decimals
-              } else {
-                decimals = await tokenContract.decimals().catch(() => 18);
-              }
-
-              // Get balance
-              balance = await tokenContract.balanceOf(address);
-              break; // Success, exit retry loop
-            } catch (retryError) {
-              attempts++;
-              console.warn(`⚠️ Attempt ${attempts} failed for ${symbol}:`, retryError);
-              if (attempts >= maxAttempts) {
-                throw retryError;
-              }
-              // Wait 500ms before retry
-              await new Promise(resolve => setTimeout(resolve, 500));
-            }
-          }
-
-          // Format balance with proper decimals
-          balances[symbol] = ethers.formatUnits(balance!, decimals!);
-          
-          console.log(`✅ ${symbol} wallet balance: ${balances[symbol]} (raw: ${balance!.toString()}, decimals: ${decimals})`);
-
-          // Additional verification for contracts
+          // First verify this is the correct token
           try {
             const [contractName, contractSymbol] = await Promise.all([
               tokenContract.name().catch(() => 'Unknown'),
               tokenContract.symbol().catch(() => symbol)
             ]);
-            console.log(`ℹ️ ${symbol} contract info - Name: ${contractName}, Symbol: ${contractSymbol}`);
+            console.log(`ℹ️ ${symbol} contract verified - Name: ${contractName}, Symbol: ${contractSymbol}`);
+            
+            // Warn if symbol doesn't match
+            if (!contractSymbol.includes(symbol) && !contractSymbol.includes(symbol.replace('W', ''))) {
+              console.warn(`⚠️ Symbol mismatch for ${symbol}: expected ${symbol}, got ${contractSymbol}`);
+            }
           } catch (e) {
-            console.warn(`⚠️ Could not verify contract info for ${symbol}:`, e);
+            console.warn(`⚠️ Could not verify contract for ${symbol}:`, e);
           }
 
+          // Get balance with proper decimals
+          const decimals = symbol === 'USDC' ? 6 : 18;
+          const balance = await tokenContract.balanceOf(address);
+          balances[symbol] = ethers.formatUnits(balance, decimals);
+          
+          console.log(`✅ ${symbol} wallet balance: ${balances[symbol]} (raw: ${balance.toString()})`);
+
         } catch (error) {
-          console.error(`❌ Error fetching ${symbol} wallet balance from ${tokenAddress}:`, error);
+          console.error(`❌ Error fetching ${symbol} wallet balance:`, error);
           balances[symbol] = '0';
         }
       }
 
-      console.log('📊 Final token balances summary:', balances);
+      // Then, get CONTRACT deposited balances (used for DCA swaps)
+      if (isContractDeployed) {
+        console.log('📋 Fetching CONTRACT deposited balances...');
+        try {
+          const contract = getContract(walletState.provider);
+          
+          // Get deposited token balances
+          for (const [symbol, tokenAddress] of Object.entries(TOKENS)) {
+            try {
+              const depositedBalance = await contract.getUserBalance(address, tokenAddress);
+              const decimals = symbol === 'USDC' ? 6 : 18;
+              balances[`${symbol}_DEPOSITED`] = ethers.formatUnits(depositedBalance, decimals);
+              console.log(`📊 ${symbol} deposited in contract: ${balances[`${symbol}_DEPOSITED`]}`);
+            } catch (error) {
+              console.error(`❌ Error fetching ${symbol} deposited balance:`, error);
+              balances[`${symbol}_DEPOSITED`] = '0';
+            }
+          }
+
+          // Get ETH deposited in contract (from DCA swaps)
+          try {
+            const ethInContract = await contract.getUserBalance(address, ethers.ZeroAddress);
+            balances['ETH_DEPOSITED'] = ethers.formatEther(ethInContract);
+            console.log(`🎯 ETH deposited in contract: ${balances['ETH_DEPOSITED']}`);
+          } catch (error) {
+            console.error('❌ Error fetching ETH deposited balance:', error);
+            balances['ETH_DEPOSITED'] = '0';
+          }
+
+        } catch (error) {
+          console.error('❌ Error fetching contract balances:', error);
+          // Set all deposited balances to 0 if contract fails
+          for (const symbol of Object.keys(TOKENS)) {
+            balances[`${symbol}_DEPOSITED`] = '0';
+          }
+          balances['ETH_DEPOSITED'] = '0';
+        }
+      }
+
+      console.log('📊 FINAL BALANCE SUMMARY:');
+      console.log('Wallet balances (MetaMask):', Object.entries(balances).filter(([k]) => !k.includes('_DEPOSITED')));
+      console.log('Contract balances (DCA Pool):', Object.entries(balances).filter(([k]) => k.includes('_DEPOSITED')));
+      
       return balances;
     },
     enabled: isConnected && !!address && !!walletState.provider,
-    refetchInterval: 1000, // Check every 1 second for immediate updates
-    staleTime: 100, // Consider data stale after 100ms for immediate refresh
+    refetchInterval: 2000, // Reduced frequency to avoid spam
+    staleTime: 1000, // Allow 1 second cache
     refetchOnWindowFocus: true,
     refetchOnMount: true
   });

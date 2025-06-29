@@ -18,8 +18,8 @@ export function TokenBalances() {
 
   const formatBalance = (balance: string) => {
     const num = parseFloat(balance);
-    if (num === 0) return '0';
-    if (num < 0.001 && num > 0) return '< 0.001';
+    if (num === 0) return '0.0000';
+    if (num < 0.0001 && num > 0) return '< 0.0001';
     return num.toFixed(4);
   };
 
@@ -34,13 +34,15 @@ export function TokenBalances() {
     return '0.00';
   };
 
-  // Separate wallet and contract balances
+  // Separate wallet and contract balances clearly
   const walletBalances = Object.entries(tokenBalances || {}).filter(([symbol]) => !symbol.includes('_DEPOSITED'));
   const contractBalances = Object.entries(tokenBalances || {}).filter(([symbol]) => symbol.includes('_DEPOSITED'));
 
-  // Debug logging
-  console.log('Token balances in component:', tokenBalances);
-  console.log('Contract balances:', contractBalances);
+  // Debug info for troubleshooting
+  console.log('🔍 TokenBalances Debug Info:');
+  console.log('All token balances:', tokenBalances);
+  console.log('Wallet balances (MetaMask):', walletBalances);
+  console.log('Contract balances (DCA Pool):', contractBalances);
 
   return (
     <Card>
@@ -132,10 +134,24 @@ export function TokenBalances() {
           </div>
         )}
 
+        {/* Token Address Verification */}
+        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+          <h4 className="text-sm font-medium mb-2 text-blue-800 dark:text-blue-200">🔍 Token Contract Addresses</h4>
+          <div className="space-y-1 text-xs">
+            <div>USDC: <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238</code></div>
+            <div>DAI: <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">0xFF34B3d4Aee8ddCd6F9AFFFB6Fe49bD371b8a357</code></div>
+            <div>WETH: <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14</code></div>
+          </div>
+        </div>
+
         {/* Explanation */}
         <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
           <p className="text-xs text-yellow-800 dark:text-yellow-200">
-            💡 <strong>DCA swaps use tokens from the Smart Contract pool.</strong> Your wallet balance stays the same because swaps happen within the contract. Use "Withdraw to MetaMask" to see your swapped tokens in your wallet!
+            💡 <strong>Wallet vs Contract Balances:</strong><br/>
+            • <strong>Wallet balances</strong> = What you see in MetaMask<br/>
+            • <strong>Contract balances</strong> = Tokens deposited for DCA swaps<br/>
+            • DCA swaps happen within the contract and earn tokens there<br/>
+            • Use "Withdraw to MetaMask" to move earned tokens to your wallet
           </p>
         </div>
       </CardContent>

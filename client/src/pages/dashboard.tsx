@@ -11,6 +11,7 @@ import { TokenBalances } from "@/components/dashboard/token-balances";
 import { TokenDeposit } from "@/components/wallet/token-deposit";
 import { SwapExecutor } from "@/components/swap/swap-executor";
 import { EthPriceMonitor } from "@/components/dashboard/eth-price-monitor";
+import { ContractStatus } from "@/components/dashboard/contract-status";
 import { Activity, CheckCircle, Clock, Trophy, Wallet, TrendingUp, Target, Zap, Loader2 } from "lucide-react";
 import { formatAddress } from "@/lib/wallet";
 import { Link } from "wouter";
@@ -184,14 +185,14 @@ export default function Dashboard() {
           // In production, get from connected wallet
         })
       });
-      
+
       const data = await response.json();
-      
+
       // If response is not ok, throw the error with details
       if (!response.ok) {
         throw new Error(data.message || data.error || "Failed to execute intent");
       }
-      
+
       return data;
     },
     onSuccess: (data) => {
@@ -340,7 +341,7 @@ export default function Dashboard() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
               <div className="col-span-3 space-y-4">
                 <TokenBalances />
-                <EthPriceMonitor />
+                <ContractStatus />
               </div>
 
               <Card className="col-span-4">
@@ -447,7 +448,7 @@ export default function Dashboard() {
                                 </Badge>
                               )}
                             </div>
-                            
+
                             {/* Show DCA monitoring info */}
                             {intent.description.toLowerCase().includes('buy') && 
                              intent.description.toLowerCase().includes('worth') && (

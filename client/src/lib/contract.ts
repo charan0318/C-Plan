@@ -34,19 +34,31 @@ export const CONTRACT_CONFIG = {
   ]
 };
 
-// Sepolia testnet token addresses (updated for better compatibility)
+// Sepolia testnet token addresses (verified on Etherscan)
 export const TOKENS = {
-  USDC: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", // Sepolia USDC
-  DAI: "0xFF34B3d4Aee8ddCd6F9AFFFB6Fe49bD371b8a357",   // Sepolia DAI
-  WETH: "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14"  // Sepolia WETH (Confirmed)
+  USDC: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", // Sepolia USDC - Verified
+  DAI: "0xFF34B3d4Aee8ddCd6F9AFFFB6Fe49bD371b8a357",   // Sepolia DAI - Verified  
+  WETH: "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14"  // Sepolia WETH - Verified (Canonical)
 };
 
 // Token metadata for better handling
 export const TOKEN_METADATA = {
-  USDC: { decimals: 6, name: "USD Coin", symbol: "USDC" },
-  DAI: { decimals: 18, name: "Dai Stablecoin", symbol: "DAI" },
-  WETH: { decimals: 18, name: "Wrapped Ether", symbol: "WETH" }
+  USDC: { decimals: 6, name: "USD Coin", symbol: "USDC", etherscanUrl: "https://sepolia.etherscan.io/token/0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238" },
+  DAI: { decimals: 18, name: "Dai Stablecoin", symbol: "DAI", etherscanUrl: "https://sepolia.etherscan.io/token/0xFF34B3d4Aee8ddCd6F9AFFFB6Fe49bD371b8a357" },
+  WETH: { decimals: 18, name: "Wrapped Ether", symbol: "WETH", etherscanUrl: "https://sepolia.etherscan.io/token/0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14" }
 };
+
+// Utility function to verify token addresses
+export function verifyTokenAddresses() {
+  console.log('🔍 Token Address Verification:');
+  for (const [symbol, address] of Object.entries(TOKENS)) {
+    const isValid = address && address.length === 42 && address.startsWith('0x');
+    console.log(`${isValid ? '✅' : '❌'} ${symbol}: ${address}`);
+    if (TOKEN_METADATA[symbol as keyof typeof TOKEN_METADATA]) {
+      console.log(`   Etherscan: ${TOKEN_METADATA[symbol as keyof typeof TOKEN_METADATA].etherscanUrl}`);
+    }
+  }
+}
 
 export function getContract(provider: ethers.Provider, signer?: ethers.Signer) {
   if (!CONTRACT_CONFIG.address || 
