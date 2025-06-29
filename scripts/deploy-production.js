@@ -43,6 +43,30 @@ async function main() {
     WETH: "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14"
   };
 
+  try {
+    for (const [symbol, address] of Object.entries(SEPOLIA_TOKENS)) {
+      console.log(`Adding ${symbol} token at ${address}...`);
+      const tx = await contract.addSupportedToken(address);
+      await tx.wait();
+      console.log(`✅ ${symbol} token added successfully`);
+    }
+  } catch (error) {
+    console.error("❌ Error adding tokens:", error);
+  }
+
+  console.log("\n🎉 Deployment completed successfully!");
+  console.log("📝 Contract Address:", contractAddress);
+  console.log("🔗 Etherscan:", `https://sepolia.etherscan.io/address/${contractAddress}`);
+}
+
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error("❌ Deployment failed:", error);
+    process.exit(1);
+  });24d6B14"
+  };
+
   for (const [symbol, address] of Object.entries(SEPOLIA_TOKENS)) {
     try {
       await contract.addSupportedToken(address);

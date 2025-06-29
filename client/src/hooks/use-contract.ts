@@ -260,6 +260,38 @@ export function useContract() {
     }
   });
 
+  // Withdraw token mutation
+  const withdrawTokenMutation = useMutation({
+    mutationFn: async ({ token, amount }: { token: string; amount: string }) => {
+      const contract = getContractInstance();
+      const tokenAddress = TOKENS[token as keyof typeof TOKENS];
+      
+      if (!tokenAddress) throw new Error('Unsupported token');
+
+      const decimals = token === 'USDC' ? 6 : 18;
+      const amountWei = ethers.parseUnits(amount, decimals);
+
+      const tx = await contract.withdrawToken(tokenAddress, amountWei);
+      const receipt = await tx.wait();
+
+      return { tx, receipt };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['token-balances'] });
+      toast({
+        title: "Withdrawal Successful",
+        description: "Tokens have been withdrawn successfully!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Withdrawal Failed",
+        description: error.message || "Failed to withdraw tokens",
+        variant: "destructive",
+      });
+    }
+  });
+
   // Execute swap with real-time confirmation
   const executeSwapMutation = useMutation({
     mutationFn: async ({ 
@@ -328,10 +360,12 @@ export function useContract() {
     createIntent,
     executeIntent: executeIntentMutation.mutateAsync,
     depositToken: depositTokenMutation.mutateAsync,
+    withdrawToken: withdrawTokenMutation.mutateAsync,
     executeSwap: executeSwapMutation.mutateAsync,
     isCreatingIntent: createIntentMutation.isPending,
     isExecutingIntent: executeIntentMutation.isPending,
     isDepositingToken: depositTokenMutation.isPending,
+    isWithdrawingToken: withdrawTokenMutation.isPending,
     isExecutingSwap: executeSwapMutation.isPending,
     contractAddress: CONTRACT_CONFIG.address,
     isContractDeployed
