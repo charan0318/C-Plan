@@ -22,7 +22,7 @@ export function useWallet() {
 
   const queryClient = useQueryClient();
 
-  // Fetch wallet connections
+  // Fetch wallet connections - only when we have a potential connection
   const { data: connections = [] } = useQuery<WalletConnection[]>({
     queryKey: ["/api/wallet/connections"],
     queryFn: async () => {
@@ -30,7 +30,7 @@ export function useWallet() {
       if (!response.ok) throw new Error("Failed to fetch wallet connections");
       return response.json();
     },
-    enabled: true,
+    enabled: false, // Disable automatic fetching for now
     retry: 1,
     staleTime: 5 * 60 * 1000
   });
@@ -76,7 +76,7 @@ export function useWallet() {
         const network = await provider.getNetwork();
         const chainId = Number(network.chainId);
 
-        // Check if we're on Sepolia testnet (11155111)
+        // Force Sepolia testnet (11155111) - this is required
         if (chainId !== 11155111) {
           try {
             // Try to switch to Sepolia
@@ -84,6 +84,14 @@ export function useWallet() {
               method: 'wallet_switchEthereumChain',
               params: [{ chainId: '0xaa36a7' }], // Sepolia chainId in hex
             });
+            
+            // Get network info after switching
+            const newNetwork = await provider.getNetwork();
+            const newChainId = Number(newNetwork.chainId);
+            
+            if (newChainId !== 11155111) {
+              throw new Error("Must be connected to Sepolia testnet");
+            }
           } catch (switchError: any) {
             // If the chain doesn't exist, add it
             if (switchError.code === 4902) {
@@ -92,7 +100,7 @@ export function useWallet() {
                 params: [{
                   chainId: '0xaa36a7',
                   chainName: 'Sepolia Test Network',
-                  rpcUrls: ['https://eth-sepolia.g.alchemy.com/v2/demo', 'https://sepolia.infura.io/v3/'],
+                  rpcUrls: ['https://eth-sepolia.g.alchemy.com/v2/demo'],
                   blockExplorerUrls: ['https://sepolia.etherscan.io/'],
                   nativeCurrency: {
                     name: 'Sepolia ETH',
@@ -108,7 +116,7 @@ export function useWallet() {
                 params: [{ chainId: '0xaa36a7' }],
               });
             } else {
-              throw switchError;
+              throw new Error("Please switch to Sepolia testnet to continue");
             }
           }
         }
@@ -118,6 +126,11 @@ export function useWallet() {
         const finalChainId = Number(finalNetwork.chainId);
         const finalSigner = await provider.getSigner();
         const finalAddress = await finalSigner.getAddress();
+
+        // Only proceed if we're on Sepolia
+        if (finalChainId !== 11155111) {
+          throw new Error("Connection failed: Must be on Sepolia testnet");
+        }
 
         await connectWalletMutation.mutateAsync({
           address: finalAddress,
@@ -133,21 +146,7 @@ export function useWallet() {
           signer: finalSigner
         });
       } else {
-        // Fallback to mock connection for demo
-        const mockAddress = "0x742d35Cc6639Cf532793a3f8a12345678901234";
-        const mockChainId = 11155111;
-        
-        await connectWalletMutation.mutateAsync({
-          address: mockAddress,
-          chainId: mockChainId
-        });
-
-        setWalletState({
-          isConnected: true,
-          address: mockAddress,
-          chainId: mockChainId,
-          isConnecting: false
-        });
+        throw new Error("MetaMask not detected. Please install MetaMask to connect your wallet.");
       }
     } catch (error) {
       setWalletState(prev => ({ ...prev, isConnecting: false }));
@@ -172,9 +171,9 @@ export function useWallet() {
     }
   };
 
-  // Listen for account changes
+  // Listen for account changes - only when connected
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.ethereum && walletState.provider) {
+    if (typeof window !== 'undefined' && window.ethereum && walletState.isConnected) {
       const handleAccountsChanged = (accounts: string[]) => {
         if (accounts.length === 0) {
           disconnectWallet();
@@ -184,9 +183,12 @@ export function useWallet() {
         }
       };
 
-      const handleChainChanged = () => {
-        // Reload the page when chain changes
-        window.location.reload();
+      const handleChainChanged = (chainId: string) => {
+        const newChainId = parseInt(chainId, 16);
+        if (newChainId !== 11155111) {
+          // If switched away from Sepolia, disconnect
+          disconnectWallet();
+        }
       };
 
       window.ethereum.on('accountsChanged', handleAccountsChanged);
@@ -197,21 +199,7 @@ export function useWallet() {
         window.ethereum.removeListener('chainChanged', handleChainChanged);
       };
     }
-  }, [walletState.provider, walletState.address]);
-
-  // Initialize from existing connections
-  useEffect(() => {
-    const activeConnection = connections.find(conn => conn.isActive);
-    if (activeConnection && !walletState.isConnected && !walletState.isConnecting) {
-      setWalletState(prev => ({
-        ...prev,
-        isConnected: true,
-        address: activeConnection.walletAddress,
-        chainId: activeConnection.chainId,
-        isConnecting: false
-      }));
-    }
-  }, [connections, walletState.isConnected, walletState.isConnecting]);
+  }, [walletState.isConnected, walletState.address]);
 
   return {
     ...walletState,
