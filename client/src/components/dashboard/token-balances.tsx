@@ -145,13 +145,14 @@ export function TokenBalances() {
         </div>
 
         {/* Explanation */}
-        <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-          <p className="text-xs text-yellow-800 dark:text-yellow-200">
-            💡 <strong>Wallet vs Contract Balances:</strong><br/>
-            • <strong>Wallet balances</strong> = What you see in MetaMask<br/>
-            • <strong>Contract balances</strong> = Tokens deposited for DCA swaps<br/>
-            • DCA swaps happen within the contract and earn tokens there<br/>
-            • Use "Withdraw to MetaMask" to move earned tokens to your wallet
+        <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+          <p className="text-xs text-green-800 dark:text-green-200">
+            🎯 <strong>DCA Earnings Explanation:</strong><br/>
+            • <strong>MetaMask (Wallet)</strong> = Your personal token storage<br/>
+            • <strong>Smart Contract (DCA Pool)</strong> = Where DCA swaps earn tokens<br/>
+            • ✅ <strong>DCA swaps automatically earn WETH in the contract</strong><br/>
+            • 💰 <strong>Check "Contract balances" below to see your DCA earnings</strong><br/>
+            • 🔄 <strong>Use "Withdraw to MetaMask" to move earnings to your wallet</strong>
           </p>
         </div>
       </CardContent>
