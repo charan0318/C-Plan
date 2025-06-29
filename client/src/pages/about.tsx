@@ -158,55 +158,14 @@ export default function About() {
             </CardContent>
           </Card>
 
-          {/* Community & Links */}
-          <Card>
-            <CardContent className="p-8">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                Community & Resources
-              </h2>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-                    Source Code & Documentation
-                  </h3>
-                  <div className="space-y-3">
-                    <Button variant="outline" className="w-full justify-start">
-                      <FaGithub className="mr-3" size={20} />
-                      View on GitHub
-                    </Button>
-                    <Button variant="outline" className="w-full justify-start">
-                      <ExternalLink className="mr-3" size={20} />
-                      Documentation
-                    </Button>
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-                    Join the Community
-                  </h3>
-                  <div className="space-y-3">
-                    <Button variant="outline" className="w-full justify-start">
-                      <FaDiscord className="mr-3" size={20} />
-                      Discord Server
-                    </Button>
-                    <Button variant="outline" className="w-full justify-start">
-                      <FaTwitter className="mr-3" size={20} />
-                      Follow on Twitter
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Hackathon Info */}
           <Card>
             <CardContent className="p-8 text-center">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                Built for Chainlink Hackathon 2024
+                Built for Chainlink Hackathon 2025
               </h2>
               <p className="text-lg text-gray-600 dark:text-gray-300 mb-6">
-                C-PLAN was created as part of the Chainlink Hackathon 2024, showcasing the power 
+                C-PLAN was created as part of the Chainlink Hackathon 2025, showcasing the power 
                 of decentralized infrastructure and AI integration in the blockchain space.
               </p>
               <div className="flex justify-center space-x-4">
