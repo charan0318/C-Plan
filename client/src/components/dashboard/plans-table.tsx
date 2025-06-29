@@ -86,8 +86,6 @@ export function PlansTable() {
 
   const getActionIcon = (action: string) => {
     switch (action) {
-      case "STAKE":
-        return <Coins className="text-primary" size={20} />;
       case "SEND":
         return <Send className="text-accent" size={20} />;
       case "REMIND":

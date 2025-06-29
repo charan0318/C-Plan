@@ -212,7 +212,7 @@ export default function Docs() {
                   <div>
                     <h3 className="font-semibold mb-2">Advanced DeFi Strategies</h3>
                     <p className="text-muted-foreground">
-                      Automate complex DeFi strategies like Dollar Cost Averaging (DCA), yield farming, 
+                      Automate complex DeFi strategies like Dollar Cost Averaging (DCA) 
                       and portfolio rebalancing with simple voice commands.
                     </p>
                   </div>
@@ -584,15 +584,7 @@ Block Explorer: https://sepolia.etherscan.io`}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-start gap-3">
-                          <Badge variant="outline" className="mt-1">STAKE</Badge>
-                          <div>
-                            <p className="font-medium">Staking Operations</p>
-                            <p className="text-sm text-muted-foreground">
-                              Automate staking and yield farming strategies
-                            </p>
-                          </div>
-                        </div>
+                        
                         <div className="flex items-start gap-3">
                           <Badge variant="outline" className="mt-1">SEND</Badge>
                           <div>

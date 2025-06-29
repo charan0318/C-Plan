@@ -1087,22 +1087,7 @@ function generateAgentResponse(userMessage: string) {
   let parsedIntent = null;
   let response = "I understand you want to automate something with your wallet. Can you provide more specific details?";
 
-  if (message.includes("stake") && message.includes("usdc")) {
-    const amountMatch = message.match(/(\d+)\s*usdc/);
-    const gasMatch = message.match(/(\d+)\s*gwei/);
-    const frequencyMatch = message.match(/(weekly|monthly|daily)/);
-
-    parsedIntent = {
-      action: "STAKE",
-      token: "USDC",
-      amount: amountMatch ? amountMatch[1] : "100",
-      frequency: frequencyMatch ? frequencyMatch[1].toUpperCase() : "WEEKLY",
-      conditions: gasMatch ? { gasPrice: { max: parseInt(gasMatch[1]) } } : {}
-    };
-
-    response = `Perfect! I've parsed your staking request:\n\n**Action:** ${parsedIntent.action}\n**Amount:** ${parsedIntent.amount} ${parsedIntent.token}\n**Frequency:** ${parsedIntent.frequency}\n**Condition:** Gas < ${gasMatch ? gasMatch[1] : "20"} gwei\n\nWould you like me to create this automation plan?`;
-  }
-  else if (message.includes("send") && (message.includes("dai") || message.includes("usdc"))) {
+  if (message.includes("send") && (message.includes("dai") || message.includes("usdc"))) {
     const tokenMatch = message.match(/(dai|usdc)/i);
     const amountMatch = message.match(/(\d+)\s*(dai|usdc)/i);
     const frequencyMatch = message.match(/(weekly|monthly|daily)/);
