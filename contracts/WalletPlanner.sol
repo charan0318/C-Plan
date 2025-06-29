@@ -4,9 +4,13 @@ pragma solidity ^0.8.21;
 
 import "@thirdweb-dev/contracts/base/ERC721Base.sol";
 import "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
+interface IERC20 {
+    function transfer(address to, uint256 amount) external returns (bool);
+    function transferFrom(address from, address to, uint256 amount) external returns (bool);
+    function balanceOf(address account) external view returns (uint256);
+    function approve(address spender, uint256 amount) external returns (bool);
+}
 
 interface IUniswapV2Router02 {
     function swapExactTokensForETH(
@@ -31,8 +35,7 @@ interface IUniswapV2Router02 {
     function WETH() external pure returns (address);
 }
 
-contract WalletPlanner is ERC721Base, AutomationCompatible, ReentrancyGuard {
-    using SafeERC20 for IERC20;
+contract WalletPlanner is ERC721Base, AutomationCompatible {
     
     struct Intent {
         uint256 id;
@@ -118,21 +121,21 @@ contract WalletPlanner is ERC721Base, AutomationCompatible, ReentrancyGuard {
     }
 
     // A. Add Funds Logic
-    function depositToken(address token, uint256 amount) external nonReentrant {
+    function depositToken(address token, uint256 amount) external {
         require(supportedTokens[token], "Token not supported");
         require(amount > 0, "Amount must be greater than 0");
         
-        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(token).transferFrom(msg.sender, address(this), amount);
         userBalances[msg.sender][token] += amount;
         
         emit TokenDeposited(msg.sender, token, amount);
     }
     
-    function withdrawToken(address token, uint256 amount) external nonReentrant {
+    function withdrawToken(address token, uint256 amount) external {
         require(userBalances[msg.sender][token] >= amount, "Insufficient balance");
         
         userBalances[msg.sender][token] -= amount;
-        IERC20(token).safeTransfer(msg.sender, amount);
+        IERC20(token).transfer(msg.sender, amount);
         
         emit TokenWithdrawn(msg.sender, token, amount);
     }
@@ -148,7 +151,7 @@ contract WalletPlanner is ERC721Base, AutomationCompatible, ReentrancyGuard {
         address tokenOut,
         address recipient,
         uint256 slippageTolerance
-    ) external nonReentrant returns (uint256 amountOut) {
+    ) external returns (uint256 amountOut) {
         require(supportedTokens[tokenIn], "Input token not supported");
         require(userBalances[msg.sender][tokenIn] >= amountIn, "Insufficient balance");
         require(slippageTolerance <= MAX_SLIPPAGE, "Slippage too high");
@@ -156,7 +159,7 @@ contract WalletPlanner is ERC721Base, AutomationCompatible, ReentrancyGuard {
         userBalances[msg.sender][tokenIn] -= amountIn;
         
         // Approve router to spend tokens
-        IERC20(tokenIn).safeApprove(address(uniswapRouter), amountIn);
+        IERC20(tokenIn).approve(address(uniswapRouter), amountIn);
         
         address[] memory path;
         if (tokenOut == address(0)) {
@@ -309,7 +312,7 @@ contract WalletPlanner is ERC721Base, AutomationCompatible, ReentrancyGuard {
         return intentId;
     }
 
-    function executeIntent(uint256 _intentId) external nonReentrant {
+    function executeIntent(uint256 _intentId) external {
         Intent storage intent = intents[_intentId];
         require(intent.user == msg.sender, "Not authorized");
         require(!intent.executed, "Already executed");
@@ -442,7 +445,7 @@ contract WalletPlanner is ERC721Base, AutomationCompatible, ReentrancyGuard {
     // Emergency functions
     function emergencyWithdraw(address token) external onlyOwner {
         uint256 balance = IERC20(token).balanceOf(address(this));
-        IERC20(token).safeTransfer(owner(), balance);
+        IERC20(token).transfer(owner(), balance);
     }
 
     function emergencyWithdrawETH() external onlyOwner {
