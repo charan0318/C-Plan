@@ -89,6 +89,39 @@ export function TokenDeposit() {
     }
   };
 
+  const handleWithdrawToWallet = async (token: string) => {
+    const depositedBalance = getDepositedBalance(token);
+    if (parseFloat(depositedBalance) <= 0) {
+      toast({
+        title: "No Balance",
+        description: `No ${token} balance to withdraw`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      toast({
+        title: "Withdrawing to Wallet",
+        description: `Withdrawing ${depositedBalance} ${token} to your MetaMask wallet...`,
+      });
+      
+      await withdrawToken({ token, amount: depositedBalance });
+      
+      toast({
+        title: "Withdrawal Complete",
+        description: `${depositedBalance} ${token} withdrawn to your wallet. Check MetaMask!`,
+      });
+    } catch (error) {
+      console.error("Withdrawal failed:", error);
+      toast({
+        title: "Withdrawal Error",
+        description: `Failed to withdraw ${token}: ${error}`,
+        variant: "destructive",
+      });
+    }
+  };
+
   const getWalletBalance = (symbol: string) => {
     return tokenBalances?.[symbol] || '0';
   };
@@ -141,9 +174,21 @@ export function TokenDeposit() {
               </div>
               <div className="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                 <span className="text-sm text-gray-600 dark:text-gray-400">Deposited (On-Chain):</span>
-                <Badge variant="secondary">
-                  {formatBalance(getDepositedBalance(selectedToken))} {selectedToken}
-                </Badge>
+                <div className="flex items-center space-x-2">
+                  <Badge variant="secondary">
+                    {formatBalance(getDepositedBalance(selectedToken))} {selectedToken}
+                  </Badge>
+                  {parseFloat(getDepositedBalance(selectedToken)) > 0 && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleWithdrawToWallet(selectedToken)}
+                      className="h-6 px-2 text-xs"
+                    >
+                      → Wallet
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -278,10 +323,39 @@ export function TokenDeposit() {
           </p>
         </div>
 
-        <div className="text-xs text-gray-500 space-y-1">
-          <p>• This will approve and deposit tokens to the contract</p>
-          <p>• Deposited tokens can be used for automated swaps</p>
-          <p>• You can withdraw your tokens anytime</p>
+        <div className="space-y-3">
+          <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+            <h4 className="text-sm font-medium mb-2 text-green-800 dark:text-green-200">Quick Withdraw to MetaMask</h4>
+            <div className="space-y-2">
+              {supportedTokens.map((token) => {
+                const balance = getDepositedBalance(token.symbol);
+                const hasBalance = parseFloat(balance) > 0;
+                return (
+                  <div key={token.symbol} className="flex items-center justify-between">
+                    <span className="text-sm">{token.icon} {token.symbol}:</span>
+                    {hasBalance ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleWithdrawToWallet(token.symbol)}
+                        className="h-7 px-3 text-xs"
+                      >
+                        Withdraw {formatBalance(balance)} → MetaMask
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-gray-500">No balance</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="text-xs text-gray-500 space-y-1">
+            <p>• DCA swaps happen within the contract</p>
+            <p>• Use "Withdraw to MetaMask" to see tokens in your wallet</p>
+            <p>• Deposited tokens can be used for automated swaps</p>
+          </div>
         </div>
       </CardContent>
     </Card>
