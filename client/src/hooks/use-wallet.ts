@@ -206,16 +206,28 @@ export function useWallet() {
     if (typeof window !== 'undefined' && window.ethereum) {
       const handleAccountsChanged = (accounts: string[]) => {
         if (accounts.length === 0) {
-          disconnectWallet();
-        } else if (walletState.isConnected && accounts[0] !== walletState.address) {
-          connectWallet();
+          setWalletState(prev => ({
+            ...prev,
+            isConnected: false,
+            address: undefined,
+            chainId: undefined,
+            provider: undefined,
+            signer: undefined
+          }));
         }
       };
 
       const handleChainChanged = (chainId: string) => {
         const newChainId = parseInt(chainId, 16);
-        if (newChainId !== 11155111 && walletState.isConnected) {
-          disconnectWallet();
+        if (newChainId !== 11155111) {
+          setWalletState(prev => ({
+            ...prev,
+            isConnected: false,
+            address: undefined,
+            chainId: undefined,
+            provider: undefined,
+            signer: undefined
+          }));
         }
       };
 
@@ -227,7 +239,7 @@ export function useWallet() {
         window.ethereum.removeListener('chainChanged', handleChainChanged);
       };
     }
-  }, [walletState.isConnected, walletState.address]);
+  }, []);
 
   return {
     ...walletState,
