@@ -158,8 +158,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/nfts", async (req, res) => {
     try {
       const nfts = storage.nftTokens || [];
-      res.json(nfts);
+      // Ensure we always return an array
+      const nftArray = Array.isArray(nfts) ? nfts : [];
+      res.json(nftArray);
     } catch (error) {
+      console.error("NFT fetch error:", error);
       res.status(500).json({ error: "Failed to fetch NFTs" });
     }
   });

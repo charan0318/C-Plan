@@ -26,15 +26,20 @@ export interface Intent {
 }
 
 function NFTCollection() {
-  const { data: nfts = [], isLoading } = useQuery({
+  const { data: nftsResponse = [], isLoading } = useQuery({
     queryKey: ["/api/nfts"],
     queryFn: async () => {
       const response = await fetch("/api/nfts");
       if (!response.ok) throw new Error("Failed to fetch NFTs");
-      return response.json();
+      const data = await response.json();
+      // Ensure we always return an array
+      return Array.isArray(data) ? data : [];
     },
     refetchInterval: 1000
   });
+
+  // Ensure nfts is always an array
+  const nfts = Array.isArray(nftsResponse) ? nftsResponse : [];
 
   if (isLoading) {
     return (
@@ -119,15 +124,23 @@ export default function Dashboard() {
   });
 
   const { data: nftBalance = 0, isLoading: isLoadingBalance } = useQuery({
-    queryKey: ["/api/nfts"],
+    queryKey: ["/api/nft-balance"],
     queryFn: async () => {
       try {
         const response = await fetch("/api/nfts");
         if (!response.ok) return 0;
         const data = await response.json();
-        return Array.isArray(data) ? data.length : 0;
+        // Ensure we handle both array and non-array responses
+        if (Array.isArray(data)) {
+          return data.length;
+        }
+        // If it's an object with a length property
+        if (data && typeof data === 'object' && 'length' in data) {
+          return data.length;
+        }
+        return 0;
       } catch (error) {
-        console.error("Error fetching NFTs:", error);
+        console.error("Error fetching NFT balance:", error);
         return 0;
       }
     },
