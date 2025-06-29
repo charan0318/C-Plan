@@ -187,11 +187,19 @@ export default function Dashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/nfts"] });
 
-      // Show success message with NFT info
-      if (data.nftMinted) {
+      // Show success message with detailed execution info
+      if (data.success && data.executed) {
         toast({
           title: "Intent Executed Successfully! 🎉",
-          description: `Your automation completed and you earned NFT #${data.nftMinted.tokenId}`,
+          description: data.message || `Your automation completed and you earned NFT #${data.nftMinted?.tokenId}`,
+          duration: 5000,
+        });
+      } else if (data.success === false) {
+        toast({
+          title: "Execution Conditions Not Met",
+          description: data.message || "Waiting for execution conditions to be satisfied",
+          variant: "default",
+          duration: 4000,
         });
       } else {
         toast({
@@ -414,15 +422,33 @@ export default function Dashboard() {
                           </div>
                         </CardHeader>
                         <CardContent>
-                          <div className="flex items-center justify-between">
-                            <div className="text-sm text-gray-600 dark:text-gray-400">
-                              Created: {new Date(intent.timestamp * 1000).toLocaleDateString()}
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div className="text-sm text-gray-600 dark:text-gray-400">
+                                Created: {new Date(intent.timestamp * 1000).toLocaleDateString()}
+                              </div>
+                              {!intent.isActive && (
+                                <Badge variant="secondary">
+                                  <CheckCircle className="mr-1 h-3 w-3" />
+                                  Completed
+                                </Badge>
+                              )}
                             </div>
-                            {!intent.isActive && (
-                              <Badge variant="secondary">
-                                <CheckCircle className="mr-1 h-3 w-3" />
-                                Completed
-                              </Badge>
+                            
+                            {/* Show DCA monitoring info */}
+                            {intent.description.toLowerCase().includes('buy') && 
+                             intent.description.toLowerCase().includes('worth') && (
+                              <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                                <div className="text-xs text-blue-700 dark:text-blue-300">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span>💰 DCA Strategy Active</span>
+                                    <span className="font-mono">ETH: ${ethPrice?.toLocaleString() || '---'}</span>
+                                  </div>
+                                  <div className="text-[10px] opacity-75">
+                                    Waiting for price conditions • Next check in ~1hr
+                                  </div>
+                                </div>
+                              </div>
                             )}
                           </div>
                         </CardContent>
