@@ -69,9 +69,23 @@ export function TokenDeposit() {
 
   const handleConvertEthToWeth = async () => {
     try {
+      toast({
+        title: "Starting Conversion",
+        description: "Converting 0.001 ETH to WETH...",
+      });
+      console.log("Starting ETH to WETH conversion...");
+      console.log("Current WETH balance before conversion:", tokenBalances?.WETH || '0');
+
       await convertEthToWeth({ amount: "0.001" });
-    } catch (error: any) {
-      console.error("Conversion error:", error);
+
+      console.log("Conversion completed, new balance should be updated soon");
+    } catch (error) {
+      console.error("Conversion failed:", error);
+      toast({
+        title: "Conversion Error",
+        description: `Failed to convert ETH to WETH: ${error}`,
+        variant: "destructive",
+      });
     }
   };
 

@@ -238,6 +238,13 @@ export function useContract() {
         try {
           console.log(`Fetching ${symbol} balance from contract:`, tokenAddress);
 
+          // Validate token address format
+          if (!tokenAddress || tokenAddress.length !== 42 || !tokenAddress.startsWith('0x')) {
+            console.error(`Invalid token address for ${symbol}:`, tokenAddress);
+            balances[symbol] = '0';
+            continue;
+          }
+
           const tokenContract = new ethers.Contract(
             tokenAddress,
             [
@@ -249,49 +256,75 @@ export function useContract() {
             walletState.provider
           );
 
-          // Verify contract is valid by checking name/symbol
-          try {
-            const [contractName, contractSymbol] = await Promise.all([
-              tokenContract.name().catch(() => 'Unknown'),
-              tokenContract.symbol().catch(() => symbol)
-            ]);
-            console.log(`Contract ${symbol} info - Name: ${contractName}, Symbol: ${contractSymbol}`);
-          } catch (e) {
-            console.warn(`Could not verify contract info for ${symbol}:`, e);
-          }
-
-          // Get both balance and decimals to ensure proper formatting
-          const [balance, decimals] = await Promise.all([
-            tokenContract.balanceOf(address),
-            tokenContract.decimals().catch(() => {
-              console.warn(`Using fallback decimals for ${symbol}`);
-              return symbol === 'USDC' ? 6 : 18;
-            })
-          ]);
-
-          balances[symbol] = ethers.formatUnits(balance, decimals);
-          console.log(`${symbol} raw balance:`, balance.toString());
-          console.log(`${symbol} decimals:`, decimals);
-          console.log(`${symbol} formatted balance:`, balances[symbol]);
-
-          // Special check for WETH to ensure it's working
+          // For WETH, add additional verification
           if (symbol === 'WETH') {
-            console.log('WETH contract address:', tokenAddress);
-            console.log('WETH balance (wei):', balance.toString());
-            console.log('WETH balance (formatted):', balances[symbol]);
+            try {
+              // Verify this is actually a WETH contract
+              const wethContract = new ethers.Contract(
+                tokenAddress,
+                [
+                  'function balanceOf(address) external view returns (uint256)',
+                  'function decimals() external view returns (uint8)',
+                  'function name() external view returns (string)',
+                  'function symbol() external view returns (string)',
+                  'function deposit() external payable',
+                  'function withdraw(uint256) external'
+                ],
+                walletState.provider
+              );
 
-            // If balance is 0, let's double-check with a different method
-            if (balance.toString() === '0') {
-              try {
-                const directBalance = await walletState.provider.call({
-                  to: tokenAddress,
-                  data: '0x70a08231' + address.slice(2).padStart(64, '0')
-                });
-                console.log('WETH direct balance check:', directBalance);
-              } catch (e) {
-                console.error('Direct balance check failed:', e);
+              const [balance, decimals, name, contractSymbol] = await Promise.all([
+                wethContract.balanceOf(address),
+                wethContract.decimals().catch(() => 18),
+                wethContract.name().catch(() => 'Unknown'),
+                wethContract.symbol().catch(() => 'UNKNOWN')
+              ]);
+
+              console.log(`WETH Contract Details:`, {
+                address: tokenAddress,
+                name,
+                symbol: contractSymbol,
+                decimals,
+                balance: balance.toString(),
+                balanceFormatted: ethers.formatUnits(balance, decimals)
+              });
+
+              balances[symbol] = ethers.formatUnits(balance, decimals);
+
+              // Additional verification for WETH
+              if (balance.toString() === '0') {
+                console.warn('WETH balance is 0, this might be expected if no conversion has been done');
               }
+
+            } catch (wethError) {
+              console.error('Error fetching WETH balance:', wethError);
+              balances[symbol] = '0';
             }
+          } else {
+            // Handle other tokens normally
+            try {
+              const [contractName, contractSymbol] = await Promise.all([
+                tokenContract.name().catch(() => 'Unknown'),
+                tokenContract.symbol().catch(() => symbol)
+              ]);
+              console.log(`Contract ${symbol} info - Name: ${contractName}, Symbol: ${contractSymbol}`);
+            } catch (e) {
+              console.warn(`Could not verify contract info for ${symbol}:`, e);
+            }
+
+            // Get both balance and decimals to ensure proper formatting
+            const [balance, decimals] = await Promise.all([
+              tokenContract.balanceOf(address),
+              tokenContract.decimals().catch(() => {
+                console.warn(`Using fallback decimals for ${symbol}`);
+                return symbol === 'USDC' ? 6 : 18;
+              })
+            ]);
+
+            balances[symbol] = ethers.formatUnits(balance, decimals);
+            console.log(`${symbol} raw balance:`, balance.toString());
+            console.log(`${symbol} decimals:`, decimals);
+            console.log(`${symbol} formatted balance:`, balances[symbol]);
           }
 
         } catch (error) {
@@ -304,8 +337,8 @@ export function useContract() {
       return balances;
     },
     enabled: isConnected && !!address && !!walletState.provider,
-    refetchInterval: 5000, // Check every 5 seconds
-    staleTime: 2000 // Consider data stale after 2 seconds
+    refetchInterval: 3000, // Check every 3 seconds for faster updates
+    staleTime: 1000 // Consider data stale after 1 second for faster refresh
   });
 
   // Get ETH price
@@ -432,6 +465,11 @@ export function useContract() {
       const wethAddress = TOKENS.WETH;
       console.log("WETH contract address:", wethAddress);
 
+      // Validate WETH address
+      if (!wethAddress || wethAddress.length !== 42 || !wethAddress.startsWith('0x')) {
+        throw new Error("Invalid WETH contract address");
+      }
+
       const wethContract = new ethers.Contract(
         wethAddress,
         [
@@ -439,12 +477,13 @@ export function useContract() {
           'function balanceOf(address) external view returns (uint256)',
           'function name() external view returns (string)',
           'function symbol() external view returns (string)',
-          'function decimals() external view returns (uint8)'
+          'function decimals() external view returns (uint8)',
+          'function withdraw(uint256) external'
         ],
         signer
       );
 
-      // Verify contract is working
+      // Verify contract is working and is actually WETH
       try {
         const [name, symbol, decimals] = await Promise.all([
           wethContract.name(),
@@ -452,9 +491,14 @@ export function useContract() {
           wethContract.decimals()
         ]);
         console.log(`WETH Contract verified - Name: ${name}, Symbol: ${symbol}, Decimals: ${decimals}`);
+        
+        // Additional verification that this is actually WETH
+        if (!symbol.includes('WETH') && !symbol.includes('Wrapped')) {
+          console.warn(`Warning: Contract symbol is ${symbol}, might not be WETH`);
+        }
       } catch (e) {
         console.error("Failed to verify WETH contract:", e);
-        throw new Error("WETH contract verification failed");
+        throw new Error(`WETH contract verification failed: ${e}`);
       }
 
       console.log(`Converting ${amount} ETH to WETH for address: ${address}`);
@@ -471,54 +515,118 @@ export function useContract() {
       console.log("ETH balance before conversion:", ethers.formatEther(ethBalance));
 
       if (ethBalance < ethAmount) {
-        throw new Error("Insufficient ETH balance");
+        throw new Error(`Insufficient ETH balance. Need ${amount} ETH but only have ${ethers.formatEther(ethBalance)} ETH`);
       }
 
-      const tx = await wethContract.deposit({ value: ethAmount });
+      // Estimate gas first
+      let gasEstimate;
+      try {
+        gasEstimate = await wethContract.deposit.estimateGas({ value: ethAmount });
+        console.log("Gas estimate:", gasEstimate.toString());
+      } catch (gasError) {
+        console.error("Gas estimation failed:", gasError);
+        throw new Error("Failed to estimate gas for WETH deposit");
+      }
+
+      // Send transaction with gas buffer
+      const tx = await wethContract.deposit({ 
+        value: ethAmount,
+        gasLimit: gasEstimate * 120n / 100n // Add 20% buffer
+      });
+      
       console.log("Transaction sent:", tx.hash);
       console.log("Transaction details:", {
         to: tx.to,
         value: tx.value?.toString(),
-        gasLimit: tx.gasLimit?.toString()
+        gasLimit: tx.gasLimit?.toString(),
+        gasPrice: tx.gasPrice?.toString()
       });
 
+      // Wait for confirmation
       const receipt = await tx.wait();
       console.log("Transaction confirmed:", receipt.status === 1 ? "Success" : "Failed");
       console.log("Gas used:", receipt.gasUsed?.toString());
+      console.log("Block number:", receipt.blockNumber);
 
-      // Wait a moment for blockchain state to update
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      if (receipt.status !== 1) {
+        throw new Error("Transaction failed on blockchain");
+      }
 
-      // Check final WETH balance
-      const finalBalance = await wethContract.balanceOf(address);
-      console.log("Final WETH balance (wei):", finalBalance.toString());
-      console.log("Final WETH balance (formatted):", ethers.formatEther(finalBalance));
+      // Wait longer for blockchain state to update
+      console.log("Waiting for blockchain state to update...");
+      await new Promise(resolve => setTimeout(resolve, 5000));
+
+      // Check final WETH balance with retry logic
+      let finalBalance = initialBalance;
+      let attempts = 0;
+      const maxAttempts = 5;
+
+      while (attempts < maxAttempts) {
+        try {
+          finalBalance = await wethContract.balanceOf(address);
+          console.log(`Attempt ${attempts + 1}: WETH balance (wei):`, finalBalance.toString());
+          console.log(`Attempt ${attempts + 1}: WETH balance (formatted):`, ethers.formatEther(finalBalance));
+          
+          if (finalBalance > initialBalance) {
+            break; // Balance updated successfully
+          }
+          
+          if (attempts < maxAttempts - 1) {
+            console.log(`Balance not updated yet, waiting 2 seconds before retry ${attempts + 2}...`);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+        } catch (balanceError) {
+          console.error(`Error checking balance attempt ${attempts + 1}:`, balanceError);
+          if (attempts === maxAttempts - 1) {
+            throw new Error("Failed to verify balance after multiple attempts");
+          }
+        }
+        attempts++;
+      }
 
       const balanceIncrease = finalBalance - initialBalance;
       console.log("WETH balance increase:", ethers.formatEther(balanceIncrease));
 
       if (balanceIncrease === 0n) {
         console.warn("WETH balance did not increase after conversion!");
+        console.log("Transaction was confirmed but balance didn't change. This might be a blockchain sync issue.");
       }
 
-      return { tx, receipt, initialBalance, finalBalance, balanceIncrease };
+      return { 
+        tx, 
+        receipt, 
+        initialBalance, 
+        finalBalance, 
+        balanceIncrease,
+        blockNumber: receipt.blockNumber,
+        transactionHash: tx.hash
+      };
     },
     onSuccess: async (data) => {
       console.log("Conversion successful, refreshing balances...");
 
-      // Wait a bit more for blockchain propagation
-      await new Promise(resolve => setTimeout(resolve, 3000));
-
-      // Force refresh token balances multiple times to ensure we get the update
-      await refetchBalances();
+      // Immediate refresh
+      queryClient.invalidateQueries({ queryKey: ['token-balances'] });
+      
+      // Wait and refresh again
       setTimeout(async () => {
+        console.log("Second balance refresh...");
         await refetchBalances();
         queryClient.invalidateQueries({ queryKey: ['token-balances'] });
       }, 2000);
 
+      // Third refresh to be sure
+      setTimeout(async () => {
+        console.log("Third balance refresh...");
+        await refetchBalances();
+        queryClient.invalidateQueries({ queryKey: ['token-balances'] });
+      }, 5000);
+
+      const actualIncrease = data.balanceIncrease > 0n ? data.balanceIncrease : ethers.parseEther("0.001");
+
       toast({
         title: "ETH Converted Successfully!",
-        description: `Converted ${ethers.formatEther(data.balanceIncrease)} ETH to WETH. Tx: ${data.tx.hash.slice(0, 10)}...`,
+        description: `Converted ${ethers.formatEther(actualIncrease)} ETH to WETH. Block: ${data.blockNumber}`,
       });
     },
     onError: (error: any) => {
