@@ -5,15 +5,7 @@ import path from "path";
 export default defineConfig({
   plugins: [
     react(),
-    ...(process.env.NODE_ENV !== "production" &&
-    process.env.REPL_ID !== undefined
-      ? [
-          // Use dynamic import without await - let it resolve at runtime
-          import("@replit/vite-plugin-cartographer").then((m) =>
-            m.cartographer(),
-          ),
-        ]
-      : []),
+   // Remove dynamic import that causes path resolution issues
   ],
   resolve: {
     alias: {
