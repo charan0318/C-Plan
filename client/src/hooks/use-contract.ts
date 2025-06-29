@@ -109,42 +109,62 @@ export function useContract() {
     }
   };
 
-  // Execute intent mutation
+  // Execute intent mutation - now actually executes blockchain transactions
   const executeIntentMutation = useMutation({
     mutationFn: async (intentId: number) => {
       if (!walletState.provider || !signer) {
         throw new Error("Wallet not connected");
       }
 
-      // For ETH to WETH conversion, we need to interact with WETH contract directly
-      // Since our contract doesn't handle ETH wrapping yet
-      const wethAddress = TOKENS.WETH;
-      const wethContract = new ethers.Contract(
-        wethAddress,
-        [
-          'function deposit() external payable',
-          'function balanceOf(address) external view returns (uint256)'
-        ],
-        signer
-      );
+      // Get intent details from API
+      const response = await fetch(`/api/intents/${intentId}`);
+      if (!response.ok) throw new Error("Failed to get intent details");
+      const intent = await response.json();
 
-      // Convert 0.001 ETH to WETH
-      const ethAmount = ethers.parseEther("0.001");
-      const tx = await wethContract.deposit({ value: ethAmount });
-      const receipt = await tx.wait();
+      let tx, receipt;
 
-      return { tx, receipt };
+      // Execute based on intent action
+      if (intent.action === "SWAP" && intent.token === "ETH" && intent.description.includes("WETH")) {
+        // ETH to WETH conversion
+        const wethAddress = TOKENS.WETH;
+        const wethContract = new ethers.Contract(
+          wethAddress,
+          ['function deposit() external payable'],
+          signer
+        );
+
+        const ethAmount = ethers.parseEther(intent.amount || "0.001");
+        tx = await wethContract.deposit({ value: ethAmount });
+        receipt = await tx.wait();
+      } else {
+        // For other intents, we'll need to implement specific logic
+        throw new Error(`Intent action ${intent.action} not yet implemented for blockchain execution`);
+      }
+
+      // Update intent in database as executed
+      await fetch(`/api/intents/${intentId}/execute`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          transactionHash: tx.hash,
+          gasUsed: receipt.gasUsed?.toString()
+        })
+      });
+
+      return { tx, receipt, intent };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['user-intents'] });
-      queryClient.invalidateQueries({ queryKey: ['nft-balance'] });
       queryClient.invalidateQueries({ queryKey: ['token-balances'] });
+      queryClient.invalidateQueries({ queryKey: ['nft-balance'] });
+
       toast({
-        title: "Intent Executed",
-        description: "ETH has been converted to WETH successfully!",
+        title: "Intent Executed Successfully!",
+        description: `${data.intent.action} completed. Transaction: ${data.tx.hash.slice(0, 10)}...`,
       });
     },
     onError: (error: any) => {
+      console.error("Intent execution error:", error);
       toast({
         title: "Execution Failed",
         description: error.message || "Failed to execute intent",
@@ -194,24 +214,13 @@ export function useContract() {
     enabled: isConnected && !!address && !!walletState.provider && CONTRACT_CONFIG.address !== "0x0000000000000000000000000000000000000000"
   });
 
-  // Get token balances
+  // Get token balances - fetch directly from token contracts
   const { data: tokenBalances = {} } = useQuery({
     queryKey: ['token-balances', address],
     queryFn: async () => {
       if (!walletState.provider || !address) return {};
 
-      const contract = getContract(walletState.provider);
       const balances: Record<string, string> = {};
-
-      for (const [symbol, tokenAddress] of Object.entries(TOKENS)) {
-        try {
-          const balance = await contract.getUserBalance(address, tokenAddress);
-          balances[symbol] = ethers.formatUnits(balance, symbol === 'USDC' ? 6 : 18);
-        } catch (error) {
-          console.error(`Error fetching ${symbol} balance:`, error);
-          balances[symbol] = '0';
-        }
-      }
 
       // Get ETH balance
       try {
@@ -222,10 +231,26 @@ export function useContract() {
         balances.ETH = '0';
       }
 
+      // Get token balances directly from token contracts
+      for (const [symbol, tokenAddress] of Object.entries(TOKENS)) {
+        try {
+          const tokenContract = new ethers.Contract(
+            tokenAddress,
+            ['function balanceOf(address) external view returns (uint256)'],
+            walletState.provider
+          );
+          const balance = await tokenContract.balanceOf(address);
+          balances[symbol] = ethers.formatUnits(balance, symbol === 'USDC' ? 6 : 18);
+        } catch (error) {
+          console.error(`Error fetching ${symbol} balance:`, error);
+          balances[symbol] = '0';
+        }
+      }
+
       return balances;
     },
-    enabled: isConnected && !!address && !!walletState.provider && isContractDeployed,
-    refetchInterval: 10000 // Refetch every 10 seconds
+    enabled: isConnected && !!address && !!walletState.provider,
+    refetchInterval: 5000 // Refetch every 5 seconds
   });
 
   // Get ETH price

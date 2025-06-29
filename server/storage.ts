@@ -42,13 +42,60 @@ export class MemStorage implements IStorage {
   public nftTokens: any[];
 
   constructor() {
-    this.users = new Map();
-    this.walletConnections = new Map();
-    this.intents = new Map();
-    this.executionHistory = new Map();
-    this.chatMessages = new Map();
-    this.nftTokens = [];
-    this.currentId = 1;
+    // Try to load from localStorage first
+    this.loadFromStorage();
+  }
+
+  private loadFromStorage() {
+    try {
+      const savedData = process.env.NODE_ENV === 'development' ? 
+        global.storageData : null;
+
+      if (savedData) {
+        this.users = new Map(savedData.users || []);
+        this.walletConnections = new Map(savedData.walletConnections || []);
+        this.intents = new Map(savedData.intents || []);
+        this.executionHistory = new Map(savedData.executionHistory || []);
+        this.chatMessages = new Map(savedData.chatMessages || []);
+        this.nftTokens = savedData.nftTokens || [];
+        this.currentId = savedData.currentId || 1;
+      } else {
+        this.users = new Map();
+        this.walletConnections = new Map();
+        this.intents = new Map();
+        this.executionHistory = new Map();
+        this.chatMessages = new Map();
+        this.nftTokens = [];
+        this.currentId = 1;
+      }
+    } catch (error) {
+      console.error('Error loading from storage:', error);
+      this.users = new Map();
+      this.walletConnections = new Map();
+      this.intents = new Map();
+      this.executionHistory = new Map();
+      this.chatMessages = new Map();
+      this.nftTokens = [];
+      this.currentId = 1;
+    }
+  }
+
+  private saveToStorage() {
+    try {
+      if (process.env.NODE_ENV === 'development') {
+        global.storageData = {
+          users: Array.from(this.users.entries()),
+          walletConnections: Array.from(this.walletConnections.entries()),
+          intents: Array.from(this.intents.entries()),
+          executionHistory: Array.from(this.executionHistory.entries()),
+          chatMessages: Array.from(this.chatMessages.entries()),
+          nftTokens: this.nftTokens,
+          currentId: this.currentId
+        };
+      }
+    } catch (error) {
+      console.error('Error saving to storage:', error);
+    }
   }
 
   async getUser(id: number): Promise<User | undefined> {
@@ -65,6 +112,7 @@ export class MemStorage implements IStorage {
     const id = this.currentId++;
     const user: User = { ...insertUser, id };
     this.users.set(id, user);
+    this.saveToStorage();
     return user;
   }
 
@@ -128,6 +176,7 @@ export class MemStorage implements IStorage {
       updatedAt: new Date()
     };
     this.intents.set(id, newIntent);
+    this.saveToStorage();
     return newIntent;
   }
 
@@ -162,6 +211,7 @@ export class MemStorage implements IStorage {
       executedAt: new Date()
     };
     this.executionHistory.set(id, executionHistory);
+    this.saveToStorage();
     return executionHistory;
   }
 
