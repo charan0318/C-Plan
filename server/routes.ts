@@ -195,9 +195,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
               throw new Error("PRIVATE_KEY not configured");
             }
 
+            // Validate private key format
+            let privateKey = process.env.PRIVATE_KEY.trim();
+            if (!privateKey.startsWith('0x')) {
+              privateKey = '0x' + privateKey;
+            }
+            if (privateKey.length !== 66) {
+              throw new Error("PRIVATE_KEY must be 64 characters long (66 with 0x prefix)");
+            }
+            if (!/^0x[a-fA-F0-9]{64}$/.test(privateKey)) {
+              throw new Error("PRIVATE_KEY must be a valid hexadecimal string");
+            }
+
             const { ethers } = require('ethers');
             const provider = new ethers.JsonRpcProvider(process.env.SEPOLIA_RPC_URL);
-            const signer = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+            const signer = new ethers.Wallet(privateKey, provider);
 
             const contractAddress = "0xc0d5045879B6d52457ef361FD4384b0f08A6B64b";
             const contractABI = [
@@ -298,9 +310,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
             throw new Error("PRIVATE_KEY not configured");
           }
 
+          // Validate private key format
+          let privateKey = process.env.PRIVATE_KEY.trim();
+          if (!privateKey.startsWith('0x')) {
+            privateKey = '0x' + privateKey;
+          }
+          if (privateKey.length !== 66) {
+            throw new Error("PRIVATE_KEY must be 64 characters long (66 with 0x prefix)");
+          }
+          if (!/^0x[a-fA-F0-9]{64}$/.test(privateKey)) {
+            throw new Error("PRIVATE_KEY must be a valid hexadecimal string");
+          }
+
           const { ethers } = require('ethers');
           const provider = new ethers.JsonRpcProvider(process.env.SEPOLIA_RPC_URL);
-          const signer = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+          const signer = new ethers.Wallet(privateKey, provider);
 
           const contractAddress = "0xc0d5045879B6d52457ef361FD4384b0f08A6B64b";
           const contractABI = [
