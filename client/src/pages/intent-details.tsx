@@ -1,52 +1,118 @@
-import { useParams, Link } from "wouter";
+
+import { useState } from "react";
+import { useParams, useLocation, Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Pause, Play, Trash2, CheckCircle, XCircle, Clock } from "lucide-react";
+import { 
+  ArrowLeft, 
+  Play, 
+  Pause, 
+  Trash2, 
+  Clock, 
+  Activity,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Zap,
+  Loader2
+} from "lucide-react";
 import { format } from "date-fns";
-import type { IntentWithHistory } from "@/types/intent";
 
 export default function IntentDetails() {
   const params = useParams();
-  const intentId = params.id;
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [isExecuting, setIsExecuting] = useState(false);
 
-  const { data: intent, isLoading, error } = useQuery<IntentWithHistory>({
-    queryKey: ["/api/intents", intentId],
+  const intentId = parseInt(params.id || "0");
+
+  const { data: intent, isLoading, error } = useQuery({
+    queryKey: [`/api/intents/${intentId}`],
     queryFn: async () => {
       const response = await fetch(`/api/intents/${intentId}`);
       if (!response.ok) {
-        throw new Error("Intent not found");
+        if (response.status === 404) {
+          throw new Error("Intent not found");
+        }
+        throw new Error("Failed to fetch intent");
       }
       return response.json();
     },
-    enabled: !!intentId,
+    enabled: !!intentId && intentId > 0,
+  });
+
+  const executeIntentMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/intents/${intentId}/execute`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          walletAddress: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || data.error || "Failed to execute intent");
+      }
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: [`/api/intents/${intentId}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/intents"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/nfts"] });
+      
+      if (data.success && data.executed) {
+        toast({
+          title: "Intent Executed Successfully! 🎉",
+          description: data.message || "Your automation completed successfully",
+          duration: 5000,
+        });
+      } else if (data.success === false) {
+        toast({
+          title: "Execution Conditions Not Met",
+          description: data.message || "Waiting for execution conditions to be satisfied",
+          variant: "default",
+          duration: 4000,
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Execution Failed ❌",
+        description: error.message || "Failed to execute intent",
+        variant: "destructive",
+        duration: 6000,
+      });
+    },
+    onSettled: () => {
+      setIsExecuting(false);
+    }
   });
 
   const updateIntentMutation = useMutation({
-    mutationFn: async (updates: Partial<IntentWithHistory>) => {
-      const response = await apiRequest("PATCH", `/api/intents/${intentId}`, updates);
+    mutationFn: async (updates: any) => {
+      const response = await fetch(`/api/intents/${intentId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates)
+      });
+      if (!response.ok) throw new Error("Failed to update intent");
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/intents", intentId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/intents/${intentId}`] });
       queryClient.invalidateQueries({ queryKey: ["/api/intents"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       toast({
         title: "Intent Updated",
-        description: "Your automation plan has been updated successfully!",
+        description: "Automation plan has been updated",
       });
     },
     onError: () => {
@@ -60,16 +126,20 @@ export default function IntentDetails() {
 
   const deleteIntentMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("DELETE", `/api/intents/${intentId}`);
+      const response = await fetch(`/api/intents/${intentId}`, {
+        method: "DELETE"
+      });
+      if (!response.ok) throw new Error("Failed to delete intent");
       return response.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/intents"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       toast({
         title: "Intent Deleted",
         description: "Automation plan has been deleted",
       });
-      // Redirect to dashboard
-      window.location.href = "/dashboard";
+      setLocation("/dashboard");
     },
     onError: () => {
       toast({
@@ -80,57 +150,24 @@ export default function IntentDetails() {
     }
   });
 
-  const handleToggleActive = () => {
-    if (intent) {
-      updateIntentMutation.mutate({ isActive: !intent.isActive });
+  const handleExecuteIntent = async () => {
+    setIsExecuting(true);
+    try {
+      await executeIntentMutation.mutateAsync();
+    } catch (error) {
+      console.error("Failed to execute intent:", error);
     }
+  };
+
+  const handleToggleActive = () => {
+    updateIntentMutation.mutate({
+      isActive: !intent.isActive
+    });
   };
 
   const handleDelete = () => {
     if (confirm("Are you sure you want to delete this automation plan?")) {
       deleteIntentMutation.mutate();
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "SUCCESS":
-        return <CheckCircle className="text-green-600" size={16} />;
-      case "FAILED":
-        return <XCircle className="text-red-600" size={16} />;
-      case "PENDING":
-        return <Clock className="text-warning" size={16} />;
-      default:
-        return <Clock className="text-gray-500" size={16} />;
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "SUCCESS":
-        return (
-          <Badge variant="secondary" className="bg-green-100 text-green-800">
-            Success
-          </Badge>
-        );
-      case "FAILED":
-        return (
-          <Badge variant="secondary" className="bg-red-100 text-red-800">
-            Failed
-          </Badge>
-        );
-      case "PENDING":
-        return (
-          <Badge variant="secondary" className="bg-warning/10 text-warning">
-            Pending
-          </Badge>
-        );
-      default:
-        return (
-          <Badge variant="secondary">
-            {status}
-          </Badge>
-        );
     }
   };
 
@@ -196,10 +233,27 @@ export default function IntentDetails() {
           </div>
           <div className="flex space-x-2">
             <Button
+              onClick={handleExecuteIntent}
+              disabled={isExecuting || executeIntentMutation.isPending}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              {isExecuting || executeIntentMutation.isPending ? (
+                <>
+                  <Loader2 size={16} className="mr-2 animate-spin" />
+                  Executing...
+                </>
+              ) : (
+                <>
+                  <Zap size={16} className="mr-2" />
+                  Execute Now
+                </>
+              )}
+            </Button>
+            <Button
               onClick={handleToggleActive}
               variant="outline"
               disabled={updateIntentMutation.isPending}
-              className={intent.isActive ? "text-warning" : "text-accent"}
+              className={intent.isActive ? "text-orange-600" : "text-green-600"}
             >
               {intent.isActive ? <Pause size={16} className="mr-2" /> : <Play size={16} className="mr-2" />}
               {intent.isActive ? "Pause" : "Resume"}
@@ -216,178 +270,138 @@ export default function IntentDetails() {
           </div>
         </div>
 
-        <div className="space-y-6">
-          {/* Intent Details */}
+        {/* Intent Details */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <Card>
             <CardHeader>
-              <CardTitle>Intent Configuration</CardTitle>
+              <CardTitle>Intent Details</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                      Action
-                    </label>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {intent.action}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                      Token
-                    </label>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {intent.token}
-                    </p>
-                  </div>
-                  {intent.amount && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Amount
-                      </label>
-                      <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {intent.amount}
-                      </p>
-                    </div>
-                  )}
-                  <div>
-                    <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                      Frequency
-                    </label>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {intent.frequency}
-                    </p>
-                  </div>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-gray-500">Action</label>
+                <p className="text-lg font-semibold">{intent.action}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Token</label>
+                <p className="text-lg font-semibold">{intent.token}</p>
+              </div>
+              {intent.amount && (
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Amount</label>
+                  <p className="text-lg font-semibold">{intent.amount}</p>
                 </div>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                      Target Chain
-                    </label>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {intent.targetChain}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                      Status
-                    </label>
-                    <div className="mt-1">
-                      {intent.isActive ? (
-                        <Badge variant="secondary" className="bg-accent/10 text-accent">
-                          Active
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary" className="bg-gray-100 text-gray-600">
-                          Paused
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                      Next Execution
-                    </label>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {intent.nextExecution 
-                        ? format(new Date(intent.nextExecution), "MMM dd, yyyy 'at' h:mm a")
-                        : "Not scheduled"
-                      }
-                    </p>
-                  </div>
-                  {Object.keys(intent.conditions).length > 0 && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                        Conditions
-                      </label>
-                      <pre className="text-sm bg-gray-50 dark:bg-gray-800 p-2 rounded-lg mt-1 font-mono">
-                        {JSON.stringify(intent.conditions, null, 2)}
-                      </pre>
-                    </div>
+              )}
+              <div>
+                <label className="text-sm font-medium text-gray-500">Frequency</label>
+                <p className="text-lg font-semibold">{intent.frequency || "Once"}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Status</label>
+                <div className="mt-1">
+                  {intent.isActive ? (
+                    <Badge className="bg-green-100 text-green-800">
+                      <CheckCircle size={14} className="mr-1" />
+                      Active
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary">
+                      <Pause size={14} className="mr-1" />
+                      Paused
+                    </Badge>
                   )}
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Execution History */}
           <Card>
             <CardHeader>
-              <CardTitle>Execution History</CardTitle>
+              <CardTitle>Execution Info</CardTitle>
             </CardHeader>
-            <CardContent>
-              {intent.executionHistory && intent.executionHistory.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Result</TableHead>
-                        <TableHead>Gas Used</TableHead>
-                        <TableHead>Transaction</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {intent.executionHistory.map((execution) => (
-                        <TableRow key={execution.id}>
-                          <TableCell>
-                            <div>
-                              <div className="font-semibold">
-                                {format(new Date(execution.executedAt), "MMM dd, yyyy")}
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                {format(new Date(execution.executedAt), "h:mm a")}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              {getStatusIcon(execution.status)}
-                              {getStatusBadge(execution.status)}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-sm">
-                              {execution.result || "-"}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <span className="font-mono text-sm">
-                              {execution.gasUsed || "-"}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            {execution.transactionHash ? (
-                              <a
-                                href={`https://sepolia.etherscan.io/tx/${execution.transactionHash}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="font-mono text-sm text-primary hover:underline"
-                              >
-                                {execution.transactionHash.slice(0, 10)}...
-                              </a>
-                            ) : (
-                              "-"
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600 dark:text-gray-400">
-                    No executions yet. Your automation plan will appear here once it starts running.
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-gray-500">Created</label>
+                <p className="text-lg font-semibold">
+                  {format(new Date(intent.createdAt), "MMM dd, yyyy 'at' h:mm a")}
+                </p>
+              </div>
+              {intent.lastExecution && (
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Last Execution</label>
+                  <p className="text-lg font-semibold">
+                    {format(new Date(intent.lastExecution), "MMM dd, yyyy 'at' h:mm a")}
                   </p>
                 </div>
               )}
+              {intent.nextExecution && (
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Next Execution</label>
+                  <p className="text-lg font-semibold">
+                    {format(new Date(intent.nextExecution), "MMM dd, yyyy 'at' h:mm a")}
+                  </p>
+                </div>
+              )}
+              <div>
+                <label className="text-sm font-medium text-gray-500">Target Chain</label>
+                <p className="text-lg font-semibold">Sepolia Testnet</p>
+              </div>
             </CardContent>
           </Card>
         </div>
+
+        {/* Execution History */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Activity className="mr-2 h-5 w-5" />
+              Execution History
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {intent.executionHistory && intent.executionHistory.length > 0 ? (
+              <div className="space-y-4">
+                {intent.executionHistory.map((execution: any) => (
+                  <div key={execution.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      {execution.status === "SUCCESS" ? (
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                      ) : execution.status === "FAILED" ? (
+                        <XCircle className="h-5 w-5 text-red-500" />
+                      ) : (
+                        <Clock className="h-5 w-5 text-yellow-500" />
+                      )}
+                      <div>
+                        <p className="font-medium">{execution.result}</p>
+                        <p className="text-sm text-gray-500">
+                          {format(new Date(execution.executedAt), "MMM dd, yyyy 'at' h:mm a")}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <Badge
+                        variant={execution.status === "SUCCESS" ? "default" : "destructive"}
+                      >
+                        {execution.status}
+                      </Badge>
+                      {execution.transactionHash && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          TX: {execution.transactionHash.substring(0, 10)}...
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600 dark:text-gray-400">
+                  No execution history yet. Execute this intent to see results here.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
