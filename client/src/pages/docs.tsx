@@ -741,6 +741,772 @@ Block Explorer: https://sepolia.etherscan.io`}
           </div>
         );
 
+      case "automation-types":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-4xl font-bold text-gradient mb-4">Automation Types</h1>
+              <p className="text-xl text-muted-foreground">
+                Explore the different types of automations you can create with C-PLAN
+              </p>
+            </div>
+
+            <div id="dca-automation">
+              <h2 className="text-2xl font-semibold mb-4">DCA (Dollar Cost Averaging)</h2>
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5 text-green-400" />
+                      What is DCA?
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground mb-4">
+                      Dollar Cost Averaging is an investment strategy where you invest a fixed amount 
+                      of money at regular intervals, regardless of the asset's price. This helps reduce 
+                      the impact of volatility and potentially lower your average cost per token over time.
+                    </p>
+                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                      <h4 className="font-medium text-blue-400 mb-2">Benefits of DCA</h4>
+                      <ul className="text-sm space-y-1 text-muted-foreground">
+                        <li>• Reduces impact of market volatility</li>
+                        <li>• Removes emotional decision-making</li>
+                        <li>• Suitable for long-term investors</li>
+                        <li>• Easy to automate and maintain</li>
+                      </ul>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>DCA Examples</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="font-medium mb-2">Basic Weekly DCA</h4>
+                        <CodeBlock>
+{`Buy $100 worth of ETH every Monday`}
+                        </CodeBlock>
+                      </div>
+                      <div>
+                        <h4 className="font-medium mb-2">Conditional DCA</h4>
+                        <CodeBlock>
+{`Buy $50 worth of ETH every week when the price is below $2500`}
+                        </CodeBlock>
+                      </div>
+                      <div>
+                        <h4 className="font-medium mb-2">Gas-Optimized DCA</h4>
+                        <CodeBlock>
+{`Buy $25 worth of ETH daily when gas fees are below 30 gwei`}
+                        </CodeBlock>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            <div id="token-swaps">
+              <h2 className="text-2xl font-semibold mb-4">Automated Token Swaps</h2>
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Smart Swap Strategies</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-4 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-lg border border-purple-500/20">
+                        <h4 className="font-medium mb-2">Price-Based Swaps</h4>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Execute swaps when specific price conditions are met
+                        </p>
+                        <CodeBlock>
+{`Swap 1000 USDC for WETH when ETH price drops below $2000`}
+                        </CodeBlock>
+                      </div>
+                      <div className="p-4 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-lg border border-green-500/20">
+                        <h4 className="font-medium mb-2">Time-Based Swaps</h4>
+                        <p className="text-sm text-muted-foreground mb-3">
+                          Schedule regular token swaps at specific intervals
+                        </p>
+                        <CodeBlock>
+{`Swap 500 USDC for WETH every Friday at 2 PM`}
+                        </CodeBlock>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Advanced Swap Features</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-3">
+                        <Badge variant="outline" className="mt-1">SLIPPAGE</Badge>
+                        <div>
+                          <p className="font-medium">Slippage Protection</p>
+                          <p className="text-sm text-muted-foreground">
+                            Automatically set slippage tolerance to protect against price manipulation
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <Badge variant="outline" className="mt-1">MEV</Badge>
+                        <div>
+                          <p className="font-medium">MEV Protection</p>
+                          <p className="text-sm text-muted-foreground">
+                            Built-in protection against MEV attacks and front-running
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <Badge variant="outline" className="mt-1">GAS</Badge>
+                        <div>
+                          <p className="font-medium">Gas Optimization</p>
+                          <p className="text-sm text-muted-foreground">
+                            Wait for optimal gas prices before executing swaps
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            <div id="scheduled-transfers">
+              <h2 className="text-2xl font-semibold mb-4">Scheduled Transfers</h2>
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Recurring Payments</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-muted-foreground">
+                      Set up automated recurring payments for subscriptions, salaries, or regular transfers 
+                      to savings accounts. Perfect for businesses and individuals who need reliable payment automation.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <h4 className="font-medium mb-2">Salary Payments</h4>
+                        <CodeBlock>
+{`Send 5000 USDC to 0x123...abc every 1st of the month`}
+                        </CodeBlock>
+                      </div>
+                      <div>
+                        <h4 className="font-medium mb-2">Subscription Payments</h4>
+                        <CodeBlock>
+{`Send 50 USDC to 0x456...def every week for subscription`}
+                        </CodeBlock>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Conditional Transfers</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="font-medium mb-2">Balance-Based Transfers</h4>
+                        <CodeBlock>
+{`Send 100 DAI to my savings wallet when my balance exceeds 1000 DAI`}
+                        </CodeBlock>
+                      </div>
+                      <div>
+                        <h4 className="font-medium mb-2">Multi-Recipient Transfers</h4>
+                        <CodeBlock>
+{`Send 50 USDC each to wallet1, wallet2, wallet3 every month`}
+                        </CodeBlock>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            <div id="price-alerts">
+              <h2 className="text-2xl font-semibold mb-4">Price Alerts & Reminders</h2>
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Smart Notifications</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground mb-4">
+                      Stay informed about market movements with intelligent price alerts. 
+                      Set up notifications for specific price targets, percentage changes, or portfolio milestones.
+                    </p>
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="font-medium mb-2">Price Target Alerts</h4>
+                        <CodeBlock>
+{`Alert me when ETH reaches $3000 or drops below $1800`}
+                        </CodeBlock>
+                      </div>
+                      <div>
+                        <h4 className="font-medium mb-2">Portfolio Alerts</h4>
+                        <CodeBlock>
+{`Remind me when my portfolio value exceeds $50,000`}
+                        </CodeBlock>
+                      </div>
+                      <div>
+                        <h4 className="font-medium mb-2">Percentage Change Alerts</h4>
+                        <CodeBlock>
+{`Alert me when ETH moves more than 10% in 24 hours`}
+                        </CodeBlock>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "wallet-management":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-4xl font-bold text-gradient mb-4">Wallet Management</h1>
+              <p className="text-xl text-muted-foreground">
+                Comprehensive tools for managing your crypto assets and wallet connections
+              </p>
+            </div>
+
+            <div id="token-deposits">
+              <h2 className="text-2xl font-semibold mb-4">Token Deposits & Withdrawals</h2>
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Wallet className="h-5 w-5 text-blue-400" />
+                      How It Works
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <p className="text-muted-foreground">
+                        C-PLAN requires you to deposit tokens into our smart contract to enable automated 
+                        transactions. This ensures that your automations can execute even when you're not online.
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="text-center p-4 bg-card/50 rounded-lg">
+                          <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center mx-auto mb-2">
+                            <span className="text-blue-400 font-bold">1</span>
+                          </div>
+                          <h4 className="font-medium mb-1">Approve Tokens</h4>
+                          <p className="text-xs text-muted-foreground">
+                            Grant permission to the contract
+                          </p>
+                        </div>
+                        <div className="text-center p-4 bg-card/50 rounded-lg">
+                          <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center mx-auto mb-2">
+                            <span className="text-green-400 font-bold">2</span>
+                          </div>
+                          <h4 className="font-medium mb-1">Deposit</h4>
+                          <p className="text-xs text-muted-foreground">
+                            Transfer tokens to the contract
+                          </p>
+                        </div>
+                        <div className="text-center p-4 bg-card/50 rounded-lg">
+                          <div className="w-12 h-12 bg-purple-500/20 rounded-lg flex items-center justify-center mx-auto mb-2">
+                            <span className="text-purple-400 font-bold">3</span>
+                          </div>
+                          <h4 className="font-medium mb-1">Automate</h4>
+                          <p className="text-xs text-muted-foreground">
+                            Create and execute automations
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Supported Tokens</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="p-4 bg-gradient-to-br from-blue-500/10 to-blue-600/10 rounded-lg border border-blue-500/20">
+                        <div className="flex items-center gap-3 mb-3">
+                          <span className="text-2xl">💵</span>
+                          <div>
+                            <h4 className="font-medium">USDC</h4>
+                            <p className="text-xs text-muted-foreground">USD Coin</p>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground">Decimals: 6</p>
+                          <p className="text-xs text-muted-foreground">Type: Stablecoin</p>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => copyToClipboard("0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238")}
+                            className="h-6 text-xs mt-2"
+                          >
+                            Copy Address
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="p-4 bg-gradient-to-br from-purple-500/10 to-purple-600/10 rounded-lg border border-purple-500/20">
+                        <div className="flex items-center gap-3 mb-3">
+                          <span className="text-2xl">⚡</span>
+                          <div>
+                            <h4 className="font-medium">WETH</h4>
+                            <p className="text-xs text-muted-foreground">Wrapped Ether</p>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground">Decimals: 18</p>
+                          <p className="text-xs text-muted-foreground">Type: Wrapped ETH</p>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => copyToClipboard("0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14")}
+                            className="h-6 text-xs mt-2"
+                          >
+                            Copy Address
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="p-4 bg-gradient-to-br from-yellow-500/10 to-yellow-600/10 rounded-lg border border-yellow-500/20">
+                        <div className="flex items-center gap-3 mb-3">
+                          <span className="text-2xl">🪙</span>
+                          <div>
+                            <h4 className="font-medium">DAI</h4>
+                            <p className="text-xs text-muted-foreground">Dai Stablecoin</p>
+                          </div>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground">Decimals: 18</p>
+                          <p className="text-xs text-muted-foreground">Type: Stablecoin</p>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => copyToClipboard("0xFF34B3d4Aee8ddCd6F9AFFFB6Fe49bD371b8a357")}
+                            className="h-6 text-xs mt-2"
+                          >
+                            Copy Address
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            <div id="balance-monitoring">
+              <h2 className="text-2xl font-semibold mb-4">Balance Monitoring</h2>
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Real-Time Balance Tracking</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <p className="text-muted-foreground">
+                        Monitor your wallet balances and deposited contract balances in real-time. 
+                        Get insights into your asset allocation and automation funding status.
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="p-4 bg-card/50 rounded-lg border">
+                          <h4 className="font-medium mb-2 flex items-center gap-2">
+                            <Wallet className="h-4 w-4" />
+                            Wallet Balance
+                          </h4>
+                          <p className="text-sm text-muted-foreground">
+                            Tokens in your connected wallet that haven't been deposited into C-PLAN
+                          </p>
+                        </div>
+                        <div className="p-4 bg-card/50 rounded-lg border">
+                          <h4 className="font-medium mb-2 flex items-center gap-2">
+                            <Shield className="h-4 w-4" />
+                            Contract Balance
+                          </h4>
+                          <p className="text-sm text-muted-foreground">
+                            Tokens deposited in the C-PLAN contract, available for automations
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Balance Alerts</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <p className="text-muted-foreground">
+                        Set up automatic alerts when your balances reach certain thresholds to ensure 
+                        your automations never run out of funds.
+                      </p>
+                      <div className="space-y-3">
+                        <CodeBlock title="Low Balance Alert">
+{`Alert me when my USDC contract balance is below 100 USDC`}
+                        </CodeBlock>
+                        <CodeBlock title="High Balance Alert">
+{`Alert me when my total portfolio value exceeds $10,000`}
+                        </CodeBlock>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            <div id="multi-chain">
+              <h2 className="text-2xl font-semibold mb-4">Multi-Chain Support</h2>
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Supported Networks</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-4 bg-gradient-to-br from-gray-500/10 to-gray-600/10 rounded-lg border border-gray-500/20">
+                        <div className="flex items-center gap-3 mb-3">
+                          <SiEthereum className="h-6 w-6 text-gray-400" />
+                          <div>
+                            <h4 className="font-medium">Ethereum Sepolia</h4>
+                            <p className="text-xs text-muted-foreground">Testnet</p>
+                          </div>
+                        </div>
+                        <div className="space-y-1 text-xs text-muted-foreground">
+                          <p>Chain ID: 11155111</p>
+                          <p>Status: Active</p>
+                        </div>
+                      </div>
+                      <div className="p-4 bg-gradient-to-br from-purple-500/10 to-purple-600/10 rounded-lg border border-purple-500/20 opacity-50">
+                        <div className="flex items-center gap-3 mb-3">
+                          <span className="text-xl">🔮</span>
+                          <div>
+                            <h4 className="font-medium">Polygon Mumbai</h4>
+                            <p className="text-xs text-muted-foreground">Coming Soon</p>
+                          </div>
+                        </div>
+                        <div className="space-y-1 text-xs text-muted-foreground">
+                          <p>Chain ID: 80001</p>
+                          <p>Status: Planned</p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Cross-Chain Features</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-3">
+                        <Badge variant="outline" className="mt-1">BRIDGE</Badge>
+                        <div>
+                          <p className="font-medium">Cross-Chain Bridging</p>
+                          <p className="text-sm text-muted-foreground">
+                            Automatically bridge assets between supported chains based on automation needs
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <Badge variant="outline" className="mt-1">SYNC</Badge>
+                        <div>
+                          <p className="font-medium">Balance Synchronization</p>
+                          <p className="text-sm text-muted-foreground">
+                            Keep track of balances across multiple chains in a unified dashboard
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <Badge variant="outline" className="mt-1">ROUTE</Badge>
+                        <div>
+                          <p className="font-medium">Optimal Route Selection</p>
+                          <p className="text-sm text-muted-foreground">
+                            Automatically choose the best chain for each automation based on costs and liquidity
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "nft-rewards":
+        return (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-4xl font-bold text-gradient mb-4">NFT Rewards</h1>
+              <p className="text-xl text-muted-foreground">
+                Earn unique NFTs for your automation achievements and milestones
+              </p>
+            </div>
+
+            <div id="earning-nfts">
+              <h2 className="text-2xl font-semibold mb-4">Earning NFTs</h2>
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Target className="h-5 w-5 text-purple-400" />
+                      How to Earn NFT Rewards
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <p className="text-muted-foreground">
+                        C-PLAN rewards active users with unique NFTs based on their automation activities. 
+                        Each successful execution, milestone reached, and achievement unlocked earns you special collectibles.
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="p-4 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-lg border border-green-500/20">
+                          <h4 className="font-medium mb-2 text-green-400">Execution NFTs</h4>
+                          <p className="text-sm text-muted-foreground mb-3">
+                            Earned for each successful automation execution
+                          </p>
+                          <ul className="text-xs space-y-1 text-muted-foreground">
+                            <li>• First Execution - "Genesis Automator"</li>
+                            <li>• 10 Executions - "Consistent Planner"</li>
+                            <li>• 100 Executions - "Automation Master"</li>
+                          </ul>
+                        </div>
+                        <div className="p-4 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-lg border border-blue-500/20">
+                          <h4 className="font-medium mb-2 text-blue-400">Value NFTs</h4>
+                          <p className="text-sm text-muted-foreground mb-3">
+                            Earned based on total value automated
+                          </p>
+                          <ul className="text-xs space-y-1 text-muted-foreground">
+                            <li>• $1,000 Automated - "Rising Trader"</li>
+                            <li>• $10,000 Automated - "Serious Investor"</li>
+                            <li>• $100,000 Automated - "Whale Automator"</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Achievement Categories</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-3">
+                        <div className="p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
+                          <h4 className="font-medium text-yellow-400 mb-2">🏆 Milestone NFTs</h4>
+                          <ul className="text-xs space-y-1 text-muted-foreground">
+                            <li>• Time-based achievements</li>
+                            <li>• Volume milestones</li>
+                            <li>• Consistency rewards</li>
+                          </ul>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <div className="p-3 bg-purple-500/10 rounded-lg border border-purple-500/20">
+                          <h4 className="font-medium text-purple-400 mb-2">🎯 Strategy NFTs</h4>
+                          <ul className="text-xs space-y-1 text-muted-foreground">
+                            <li>• DCA expertise</li>
+                            <li>• Swap mastery</li>
+                            <li>• Multi-strategy user</li>
+                          </ul>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <div className="p-3 bg-red-500/10 rounded-lg border border-red-500/20">
+                          <h4 className="font-medium text-red-400 mb-2">💎 Rare NFTs</h4>
+                          <ul className="text-xs space-y-1 text-muted-foreground">
+                            <li>• Early adopter badges</li>
+                            <li>• Special event NFTs</li>
+                            <li>• Community contributions</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            <div id="nft-gallery">
+              <h2 className="text-2xl font-semibold mb-4">NFT Gallery</h2>
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Your Collection</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <p className="text-muted-foreground">
+                        View all your earned NFTs in the integrated gallery. Each NFT represents a unique 
+                        achievement in your automation journey and can be traded or displayed as proof of your expertise.
+                      </p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {[
+                          { name: "Genesis Automator", rarity: "Common", color: "green" },
+                          { name: "DCA Expert", rarity: "Rare", color: "blue" },
+                          { name: "Whale Automator", rarity: "Epic", color: "purple" },
+                          { name: "Early Adopter", rarity: "Legendary", color: "yellow" }
+                        ].map((nft, index) => (
+                          <div key={index} className={`p-4 bg-gradient-to-br from-${nft.color}-500/10 to-${nft.color}-600/10 rounded-lg border border-${nft.color}-500/20`}>
+                            <div className="aspect-square bg-card/50 rounded-lg mb-3 flex items-center justify-center">
+                              <span className="text-2xl">🎨</span>
+                            </div>
+                            <h4 className="font-medium text-sm">{nft.name}</h4>
+                            <p className="text-xs text-muted-foreground">{nft.rarity}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Gallery Features</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-3">
+                        <div className="flex items-start gap-3">
+                          <Badge variant="outline" className="mt-1">VIEW</Badge>
+                          <div>
+                            <p className="font-medium">High-Resolution Display</p>
+                            <p className="text-sm text-muted-foreground">
+                              View NFTs in full detail with metadata and rarity information
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <Badge variant="outline" className="mt-1">FILTER</Badge>
+                          <div>
+                            <p className="font-medium">Smart Filtering</p>
+                            <p className="text-sm text-muted-foreground">
+                              Sort by rarity, category, or achievement date
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <div className="flex items-start gap-3">
+                          <Badge variant="outline" className="mt-1">SHARE</Badge>
+                          <div>
+                            <p className="font-medium">Social Sharing</p>
+                            <p className="text-sm text-muted-foreground">
+                              Share your achievements on social media
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                          <Badge variant="outline" className="mt-1">EXPORT</Badge>
+                          <div>
+                            <p className="font-medium">Export Collection</p>
+                            <p className="text-sm text-muted-foreground">
+                              Download NFT images and metadata
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            <div id="nft-attributes">
+              <h2 className="text-2xl font-semibold mb-4">NFT Attributes & Rarity</h2>
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Dynamic Metadata</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <p className="text-muted-foreground">
+                        C-PLAN NFTs feature dynamic metadata that updates based on your continued activity. 
+                        The more you use the platform, the more valuable and unique your NFTs become.
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="p-4 bg-card/50 rounded-lg border">
+                          <h4 className="font-medium mb-2">Static Attributes</h4>
+                          <ul className="text-sm space-y-1 text-muted-foreground">
+                            <li>• Achievement Name</li>
+                            <li>• Earned Date</li>
+                            <li>• Rarity Level</li>
+                            <li>• Category Type</li>
+                          </ul>
+                        </div>
+                        <div className="p-4 bg-card/50 rounded-lg border">
+                          <h4 className="font-medium mb-2">Dynamic Attributes</h4>
+                          <ul className="text-sm space-y-1 text-muted-foreground">
+                            <li>• Total Executions</li>
+                            <li>• Value Automated</li>
+                            <li>• Streak Days</li>
+                            <li>• Success Rate</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Rarity System</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="text-center p-4 bg-gray-500/10 rounded-lg border border-gray-500/20">
+                          <div className="w-8 h-8 bg-gray-500 rounded-full mx-auto mb-2"></div>
+                          <h4 className="font-medium text-sm">Common</h4>
+                          <p className="text-xs text-muted-foreground">60% of NFTs</p>
+                        </div>
+                        <div className="text-center p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                          <div className="w-8 h-8 bg-blue-500 rounded-full mx-auto mb-2"></div>
+                          <h4 className="font-medium text-sm">Rare</h4>
+                          <p className="text-xs text-muted-foreground">25% of NFTs</p>
+                        </div>
+                        <div className="text-center p-4 bg-purple-500/10 rounded-lg border border-purple-500/20">
+                          <div className="w-8 h-8 bg-purple-500 rounded-full mx-auto mb-2"></div>
+                          <h4 className="font-medium text-sm">Epic</h4>
+                          <p className="text-xs text-muted-foreground">10% of NFTs</p>
+                        </div>
+                        <div className="text-center p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
+                          <div className="w-8 h-8 bg-yellow-500 rounded-full mx-auto mb-2"></div>
+                          <h4 className="font-medium text-sm">Legendary</h4>
+                          <p className="text-xs text-muted-foreground">5% of NFTs</p>
+                        </div>
+                      </div>
+                      <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">
+                        <h4 className="font-medium text-orange-400 mb-2">Special Collections</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Unique NFTs for special events, community contributions, and platform milestones. 
+                          These ultra-rare collectibles are only available during specific periods or achievements.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </div>
+        );
+
       case "troubleshooting":
         return (
           <div className="space-y-8">
