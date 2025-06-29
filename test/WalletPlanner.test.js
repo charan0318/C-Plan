@@ -11,7 +11,14 @@ describe("WalletPlanner", function () {
     [owner, addr1, addr2] = await ethers.getSigners();
 
     const WalletPlanner = await ethers.getContractFactory("WalletPlanner");
-    walletPlanner = await WalletPlanner.deploy();
+    walletPlanner = await WalletPlanner.deploy(
+      owner.address, // defaultAdmin
+      "WalletPlanner", // name
+      "WP", // symbol
+      owner.address, // royaltyRecipient
+      250, // royaltyBps (2.5%)
+      "0xC532a74256D3Db42D0Bf7a0400fEFDbad7694008" // uniswapRouter (Sepolia)
+    );
     await walletPlanner.waitForDeployment();
   });
 
