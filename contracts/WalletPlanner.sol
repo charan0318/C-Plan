@@ -321,7 +321,7 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
         
         // If this is a swap intent, execute the swap
         if (intent.tokenIn != address(0) && intent.amountIn > 0) {
-            executeSwap(
+            _executeSwapInternal(
                 intent.tokenIn,
                 intent.amountIn,
                 intent.tokenOut,
@@ -332,6 +332,76 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
         
         _mint(msg.sender, 1);
         emit IntentExecuted(_intentId, msg.sender);
+    }
+
+    // Internal swap function for automation
+    function _executeSwapInternal(
+        address tokenIn,
+        uint256 amountIn,
+        address tokenOut,
+        address user,
+        uint256 slippageTolerance
+    ) internal returns (uint256 amountOut) {
+        require(supportedTokens[tokenIn], "Input token not supported");
+        require(userBalances[user][tokenIn] >= amountIn, "Insufficient balance");
+        require(slippageTolerance <= MAX_SLIPPAGE, "Slippage too high");
+        
+        userBalances[user][tokenIn] -= amountIn;
+        
+        // Approve router to spend tokens
+        IERC20(tokenIn).approve(address(uniswapRouter), amountIn);
+        
+        address[] memory path;
+        if (tokenOut == address(0)) {
+            // Swap to ETH
+            path = new address[](2);
+            path[0] = tokenIn;
+            path[1] = WETH;
+            
+            uint256[] memory expectedAmounts = uniswapRouter.getAmountsOut(amountIn, path);
+            uint256 amountOutMin = (expectedAmounts[1] * (10000 - slippageTolerance)) / 10000;
+            
+            uint256[] memory amounts = uniswapRouter.swapExactTokensForETH(
+                amountIn,
+                amountOutMin,
+                path,
+                user,
+                block.timestamp + 300 // 5 minutes deadline
+            );
+            
+            amountOut = amounts[1];
+        } else {
+            // Swap token to token
+            if (tokenIn == WETH) {
+                path = new address[](2);
+                path[0] = tokenIn;
+                path[1] = tokenOut;
+            } else if (tokenOut == WETH) {
+                path = new address[](2);
+                path[0] = tokenIn;
+                path[1] = tokenOut;
+            } else {
+                path = new address[](3);
+                path[0] = tokenIn;
+                path[1] = WETH;
+                path[2] = tokenOut;
+            }
+            
+            uint256[] memory expectedAmounts = uniswapRouter.getAmountsOut(amountIn, path);
+            uint256 amountOutMin = (expectedAmounts[expectedAmounts.length - 1] * (10000 - slippageTolerance)) / 10000;
+            
+            uint256[] memory amounts = uniswapRouter.swapExactTokensForTokens(
+                amountIn,
+                amountOutMin,
+                path,
+                user,
+                block.timestamp + 300 // 5 minutes deadline
+            );
+            
+            amountOut = amounts[amounts.length - 1];
+        }
+        
+        emit SwapExecuted(user, tokenIn, tokenOut, amountIn, amountOut);
     }
 
     // Helper functions for price estimation
@@ -413,7 +483,7 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
                 
                 // Execute swap if applicable
                 if (intent.tokenIn != address(0) && intent.amountIn > 0) {
-                    try this.executeSwap(
+                    try this._executeSwapInternal(
                         intent.tokenIn,
                         intent.amountIn,
                         intent.tokenOut,
