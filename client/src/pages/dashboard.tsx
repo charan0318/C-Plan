@@ -184,8 +184,15 @@ export default function Dashboard() {
           // In production, get from connected wallet
         })
       });
-      if (!response.ok) throw new Error("Failed to execute intent");
-      return response.json();
+      
+      const data = await response.json();
+      
+      // If response is not ok, throw the error with details
+      if (!response.ok) {
+        throw new Error(data.message || data.error || "Failed to execute intent");
+      }
+      
+      return data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/intents"] });
@@ -215,9 +222,10 @@ export default function Dashboard() {
     },
     onError: (error: any) => {
       toast({
-        title: "Execution Failed",
+        title: "Execution Failed ❌",
         description: error.message || "Failed to execute intent",
         variant: "destructive",
+        duration: 6000,
       });
     }
   });

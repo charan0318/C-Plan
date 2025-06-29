@@ -186,76 +186,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
 
           // 🔥 ACTUALLY EXECUTE ON-CHAIN DCA SWAP (USDC → ETH)
-            try {
-              const { ethers } = require('ethers');
-              const provider = new ethers.JsonRpcProvider(process.env.SEPOLIA_RPC_URL);
-              const signer = new ethers.Wallet(process.env.PRIVATE_KEY || privateKey, provider);
+          try {
+            // Validate environment variables first
+            if (!process.env.SEPOLIA_RPC_URL) {
+              throw new Error("SEPOLIA_RPC_URL not configured");
+            }
+            if (!process.env.PRIVATE_KEY) {
+              throw new Error("PRIVATE_KEY not configured");
+            }
 
-              const contractAddress = "0xc0d5045879B6d52457ef361FD4384b0f08A6B64b";
-              const contractABI = [
-                "function executeSwap(address tokenIn, uint256 amountIn, address tokenOut, address recipient, uint256 slippageTolerance) external returns (uint256)",
-                "function getUserBalance(address user, address token) external view returns (uint256)",
-                "function depositToken(address token, uint256 amount) external"
-              ];
+            const { ethers } = require('ethers');
+            const provider = new ethers.JsonRpcProvider(process.env.SEPOLIA_RPC_URL);
+            const signer = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
 
-              const contract = new ethers.Contract(contractAddress, contractABI, signer);
+            const contractAddress = "0xc0d5045879B6d52457ef361FD4384b0f08A6B64b";
+            const contractABI = [
+              "function executeSwap(address tokenIn, uint256 amountIn, address tokenOut, address recipient, uint256 slippageTolerance) external returns (uint256)",
+              "function getUserBalance(address user, address token) external view returns (uint256)",
+              "function depositToken(address token, uint256 amount) external"
+            ];
 
-              // Token addresses
-              const WETH_ADDRESS = "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14";
-              const USDC_ADDRESS = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
+            const contract = new ethers.Contract(contractAddress, contractABI, signer);
 
-              // Convert dollar amount to USDC (6 decimals)
-              const usdcAmount = ethers.parseUnits(dollarAmount.toString(), 6);
+            // Token addresses
+            const WETH_ADDRESS = "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14";
+            const USDC_ADDRESS = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
 
-              console.log(`🚀 Executing DCA swap: ${dollarAmount} USDC → ETH`);
-              console.log(`USDC amount (with 6 decimals): ${usdcAmount.toString()}`);
+            // Convert dollar amount to USDC (6 decimals)
+            const usdcAmount = ethers.parseUnits(dollarAmount.toString(), 6);
 
-              // Check user's USDC balance in contract
-              const userUsdcBalance = await contract.getUserBalance(signer.address, USDC_ADDRESS);
-              console.log(`User USDC balance in contract: ${ethers.formatUnits(userUsdcBalance, 6)} USDC`);
+            console.log(`🚀 Executing DCA swap: ${dollarAmount} USDC → ETH`);
+            console.log(`USDC amount (with 6 decimals): ${usdcAmount.toString()}`);
 
-              if (userUsdcBalance < usdcAmount) {
-                throw new Error(`Insufficient USDC balance. Need ${dollarAmount} USDC but only have ${ethers.formatUnits(userUsdcBalance, 6)} USDC in contract`);
+            // Check user's USDC balance in contract
+            const userUsdcBalance = await contract.getUserBalance(signer.address, USDC_ADDRESS);
+            console.log(`User USDC balance in contract: ${ethers.formatUnits(userUsdcBalance, 6)} USDC`);
+
+            if (userUsdcBalance < usdcAmount) {
+              throw new Error(`Insufficient USDC balance. Need ${dollarAmount} USDC but only have ${ethers.formatUnits(userUsdcBalance, 6)} USDC in contract`);
+            }
+
+            // Execute the swap: USDC → WETH
+            const tx = await contract.executeSwap(
+              USDC_ADDRESS,    // tokenIn (USDC)
+              usdcAmount,      // amountIn (USDC amount with 6 decimals)
+              WETH_ADDRESS,    // tokenOut (WETH)
+              signer.address,  // recipient
+              300              // 3% slippage tolerance
+            );
+
+            const receipt = await tx.wait();
+            console.log(`✅ DCA Swap executed on-chain! TX: ${tx.hash}`);
+
+            // Parse swap events to get actual ETH received
+            const swapEvent = receipt.logs.find(log => {
+              try {
+                const parsed = contract.interface.parseLog(log);
+                return parsed.name === 'SwapExecuted';
+              } catch {
+                return false;
               }
+            });
 
-              // Execute the swap: USDC → WETH
-              const tx = await contract.executeSwap(
-                USDC_ADDRESS,    // tokenIn (USDC)
-                usdcAmount,      // amountIn (USDC amount with 6 decimals)
-                WETH_ADDRESS,    // tokenOut (WETH)
-                signer.address,  // recipient
-                300              // 3% slippage tolerance
-              );
+            let actualEthReceived = ethAmount;
+            if (swapEvent) {
+              const parsed = contract.interface.parseLog(swapEvent);
+              actualEthReceived = ethers.formatEther(parsed.args.amountOut);
+            }
 
-              const receipt = await tx.wait();
-              console.log(`✅ DCA Swap executed on-chain! TX: ${tx.hash}`);
+            executionMessage = `✅ DCA Executed ON-CHAIN: Swapped ${dollarAmount} USDC → ${actualEthReceived} ETH at $${currentEthPrice}/ETH - TX: ${tx.hash}`;
 
-              // Parse swap events to get actual ETH received
-              const swapEvent = receipt.logs.find(log => {
-                try {
-                  const parsed = contract.interface.parseLog(log);
-                  return parsed.name === 'SwapExecuted';
-                } catch {
-                  return false;
-                }
-              });
-
-              let actualEthReceived = ethAmount;
-              if (swapEvent) {
-                const parsed = contract.interface.parseLog(swapEvent);
-                actualEthReceived = ethers.formatEther(parsed.args.amountOut);
-              }
-
-              executionMessage = `✅ DCA Executed ON-CHAIN: Swapped ${dollarAmount} USDC → ${actualEthReceived} ETH at $${currentEthPrice}/ETH - TX: ${tx.hash}`;
-
-              executionResult.transactionHash = tx.hash;
-              executionResult.gasUsed = receipt.gasUsed.toString();
-              executionResult.actualEthReceived = actualEthReceived;
+            executionResult.transactionHash = tx.hash;
+            executionResult.gasUsed = receipt.gasUsed.toString();
+            executionResult.actualEthReceived = actualEthReceived;
+            executionResult.onChainSuccess = true;
 
           } catch (contractError) {
-            console.error("Blockchain execution failed:", contractError);
-            // Fallback to simulation for now
-            executionMessage = `✅ DCA Simulated: Bought ${ethAmount} ETH for $${dollarAmount} at $${currentEthPrice} per ETH (Contract call failed, using simulation)`;
+            console.error("❌ Blockchain execution failed:", contractError);
+            
+            // Return early with failure for contract errors
+            return res.status(400).json({
+              success: false,
+              executed: false,
+              error: "Contract execution failed",
+              message: `Failed to execute DCA swap on-chain: ${contractError.message}`,
+              details: {
+                reason: contractError.message,
+                suggestion: "Please check your wallet balance and ensure you have sufficient USDC deposited in the contract"
+              }
+            });
           }
 
           // For recurring intents, don't mark as executed, just update last execution
@@ -271,9 +290,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         // 🔥 REGULAR INTENT EXECUTION ON-CHAIN
         try {
+          // Validate environment variables first
+          if (!process.env.SEPOLIA_RPC_URL) {
+            throw new Error("SEPOLIA_RPC_URL not configured");
+          }
+          if (!process.env.PRIVATE_KEY) {
+            throw new Error("PRIVATE_KEY not configured");
+          }
+
           const { ethers } = require('ethers');
           const provider = new ethers.JsonRpcProvider(process.env.SEPOLIA_RPC_URL);
-          const signer = new ethers.Wallet(process.env.PRIVATE_KEY || privateKey, provider);
+          const signer = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
 
           const contractAddress = "0xc0d5045879B6d52457ef361FD4384b0f08A6B64b";
           const contractABI = [
@@ -299,13 +326,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           executionMessage = `Executed ON-CHAIN: ${intent.action} ${intent.amount || ''} ${intent.token} - TX: ${executeTx.hash}`;
           executionResult = {
             transactionHash: executeTx.hash,
-            gasUsed: executeReceipt.gasUsed.toString()
+            gasUsed: executeReceipt.gasUsed.toString(),
+            onChainSuccess: true
           };
 
         } catch (contractError) {
-          console.error("Blockchain execution failed:", contractError);
-          // Fallback to simulation
-          executionMessage = `Executed (Simulated): ${intent.action} ${intent.amount || ''} ${intent.token} (Contract call failed)`;
+          console.error("❌ Blockchain execution failed:", contractError);
+          
+          // Return early with failure for contract errors
+          return res.status(400).json({
+            success: false,
+            executed: false,
+            error: "Contract execution failed",
+            message: `Failed to execute intent on-chain: ${contractError.message}`,
+            details: {
+              reason: contractError.message,
+              suggestion: "Please check your wallet configuration and try again"
+            }
+          });
         }
 
         await storage.updateIntent(intentId, { executed: true });
@@ -321,13 +359,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Only proceed if we have a successful execution
+      if (!executionResult.onChainSuccess) {
+        return res.status(500).json({
+          success: false,
+          executed: false,
+          error: "Execution failed",
+          message: "Intent execution did not complete successfully"
+        });
+      }
+
       // Create execution history with real TX data
       await storage.createExecutionHistory({
         intentId: intentId,
         status: 'SUCCESS',
         result: JSON.stringify(executionResult),
         gasUsed: executionResult.gasUsed || '21000',
-        transactionHash: executionResult.transactionHash || `0x${Math.random().toString(16).substr(2, 64)}`
+        transactionHash: executionResult.transactionHash
       });
 
       // 🔥 REAL NFT MINTING ON-CHAIN (the contract auto-mints when intent executes)
@@ -345,7 +393,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           { trait_type: "ETH Amount", value: isDcaIntent ? executionResult.ethAmount : intent.amount || "N/A" },
           { trait_type: "Purchase Price", value: isDcaIntent ? `$${executionResult.purchasePrice}` : "N/A" },
           { trait_type: "Execution Date", value: new Date().toISOString().split('T')[0] },
-          { trait_type: "Transaction Hash", value: executionResult.transactionHash || "N/A" },
+          { trait_type: "Transaction Hash", value: executionResult.transactionHash },
           { trait_type: "Execution Type", value: "ON_CHAIN" }
         ]
       };
