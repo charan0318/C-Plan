@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.21;
 
@@ -20,7 +19,7 @@ interface IUniswapV2Router02 {
         address to,
         uint deadline
     ) external returns (uint[] memory amounts);
-    
+
     function swapExactTokensForTokens(
         uint amountIn,
         uint amountOutMin,
@@ -28,15 +27,15 @@ interface IUniswapV2Router02 {
         address to,
         uint deadline
     ) external returns (uint[] memory amounts);
-    
+
     function getAmountsOut(uint amountIn, address[] calldata path)
         external view returns (uint[] memory amounts);
-    
+
     function WETH() external pure returns (address);
 }
 
 contract WalletPlanner is ERC721Base, AutomationCompatible {
-    
+
     struct Intent {
         uint256 id;
         address user;
@@ -56,23 +55,23 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
     uint256 private _nextIntentId;
     mapping(uint256 => Intent) public intents;
     mapping(address => uint256[]) public userIntents;
-    
+
     // User token balances
     mapping(address => mapping(address => uint256)) public userBalances;
-    
+
     // Supported tokens
     mapping(address => bool) public supportedTokens;
-    
+
     // Uniswap router
     IUniswapV2Router02 public immutable uniswapRouter;
-    
+
     // Constants
     uint256 public constant INTERVAL = 1 hours;
     uint256 public lastChecked;
     address public functionsConsumer;
     uint256 public constant MAX_SLIPPAGE = 500; // 5% max slippage
     uint256 public constant DEFAULT_SLIPPAGE = 200; // 2% default slippage
-    
+
     // Sepolia testnet addresses
     address public constant USDC = 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238; // Sepolia USDC
     address public constant DAI = 0xFF34B3d4Aee8ddCd6F9AFFFB6Fe49bD371b8a357; // Sepolia DAI
@@ -113,7 +112,7 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
             // Default Sepolia Uniswap V2 Router
             uniswapRouter = IUniswapV2Router02(0xC532a74256D3Db42D0Bf7a0400fEFDbad7694008);
         }
-        
+
         // Set supported tokens
         supportedTokens[USDC] = true;
         supportedTokens[DAI] = true;
@@ -124,22 +123,22 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
     function depositToken(address token, uint256 amount) external {
         require(supportedTokens[token], "Token not supported");
         require(amount > 0, "Amount must be greater than 0");
-        
+
         IERC20(token).transferFrom(msg.sender, address(this), amount);
         userBalances[msg.sender][token] += amount;
-        
+
         emit TokenDeposited(msg.sender, token, amount);
     }
-    
+
     function withdrawToken(address token, uint256 amount) external {
         require(userBalances[msg.sender][token] >= amount, "Insufficient balance");
-        
+
         userBalances[msg.sender][token] -= amount;
         IERC20(token).transfer(msg.sender, amount);
-        
+
         emit TokenWithdrawn(msg.sender, token, amount);
     }
-    
+
     function getUserBalance(address user, address token) external view returns (uint256) {
         return userBalances[user][token];
     }
@@ -155,22 +154,22 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
         require(supportedTokens[tokenIn], "Input token not supported");
         require(userBalances[msg.sender][tokenIn] >= amountIn, "Insufficient balance");
         require(slippageTolerance <= MAX_SLIPPAGE, "Slippage too high");
-        
+
         userBalances[msg.sender][tokenIn] -= amountIn;
-        
+
         // Approve router to spend tokens
         IERC20(tokenIn).approve(address(uniswapRouter), amountIn);
-        
+
         address[] memory path;
         if (tokenOut == address(0)) {
             // Swap to ETH
             path = new address[](2);
             path[0] = tokenIn;
             path[1] = WETH;
-            
+
             uint256[] memory expectedAmounts = uniswapRouter.getAmountsOut(amountIn, path);
             uint256 amountOutMin = (expectedAmounts[1] * (10000 - slippageTolerance)) / 10000;
-            
+
             uint256[] memory amounts = uniswapRouter.swapExactTokensForETH(
                 amountIn,
                 amountOutMin,
@@ -178,7 +177,7 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
                 recipient,
                 block.timestamp + 300 // 5 minutes deadline
             );
-            
+
             amountOut = amounts[1];
         } else {
             // Swap token to token
@@ -196,10 +195,10 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
                 path[1] = WETH;
                 path[2] = tokenOut;
             }
-            
+
             uint256[] memory expectedAmounts = uniswapRouter.getAmountsOut(amountIn, path);
             uint256 amountOutMin = (expectedAmounts[expectedAmounts.length - 1] * (10000 - slippageTolerance)) / 10000;
-            
+
             uint256[] memory amounts = uniswapRouter.swapExactTokensForTokens(
                 amountIn,
                 amountOutMin,
@@ -207,10 +206,10 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
                 recipient,
                 block.timestamp + 300 // 5 minutes deadline
             );
-            
+
             amountOut = amounts[amounts.length - 1];
         }
-        
+
         emit SwapExecuted(msg.sender, tokenIn, tokenOut, amountIn, amountOut);
     }
 
@@ -223,12 +222,12 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
         address _tokenOut,
         uint256 _slippageTolerance
     ) external returns (uint256) {
-        require(supportedTokens[_tokenIn], "Input token not supported");
-        require(userBalances[msg.sender][_tokenIn] >= _amountIn, "Insufficient balance");
-        require(_slippageTolerance <= MAX_SLIPPAGE, "Slippage too high");
-        
+        require(supportedTokens[_tokenIn], "Token not supported");
+        require(userBalances[msg.sender][_tokenIn] >= _amountIn, "Low balance");
+        require(_slippageTolerance <= MAX_SLIPPAGE, "High slippage");
+
         uint256 intentId = _nextIntentId++;
-        
+
         intents[intentId] = Intent({
             id: intentId,
             user: msg.sender,
@@ -259,9 +258,9 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
         uint256 _slippageTolerance
     ) external returns (uint256) {
         require(_executionTime > block.timestamp, "Execution time must be in the future");
-        require(supportedTokens[_tokenIn], "Input token not supported");
-        require(userBalances[msg.sender][_tokenIn] >= _amountIn, "Insufficient balance");
-        require(_slippageTolerance <= MAX_SLIPPAGE, "Slippage too high");
+        require(supportedTokens[_tokenIn], "Token not supported");
+        require(userBalances[msg.sender][_tokenIn] >= _amountIn, "Low balance");
+        require(_slippageTolerance <= MAX_SLIPPAGE, "High slippage");
 
         uint256 intentId = _nextIntentId++;
 
@@ -318,7 +317,7 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
         require(!intent.executed, "Already executed");
 
         intent.executed = true;
-        
+
         // If this is a swap intent, execute the swap
         if (intent.tokenIn != address(0) && intent.amountIn > 0) {
             _executeSwapInternal(
@@ -329,7 +328,7 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
                 intent.slippageTolerance
             );
         }
-        
+
         _mint(msg.sender, 1);
         emit IntentExecuted(_intentId, msg.sender);
     }
@@ -345,22 +344,22 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
         require(supportedTokens[tokenIn], "Input token not supported");
         require(userBalances[user][tokenIn] >= amountIn, "Insufficient balance");
         require(slippageTolerance <= MAX_SLIPPAGE, "Slippage too high");
-        
+
         userBalances[user][tokenIn] -= amountIn;
-        
+
         // Approve router to spend tokens
         IERC20(tokenIn).approve(address(uniswapRouter), amountIn);
-        
+
         address[] memory path;
         if (tokenOut == address(0)) {
             // Swap to ETH
             path = new address[](2);
             path[0] = tokenIn;
             path[1] = WETH;
-            
+
             uint256[] memory expectedAmounts = uniswapRouter.getAmountsOut(amountIn, path);
             uint256 amountOutMin = (expectedAmounts[1] * (10000 - slippageTolerance)) / 10000;
-            
+
             uint256[] memory amounts = uniswapRouter.swapExactTokensForETH(
                 amountIn,
                 amountOutMin,
@@ -368,7 +367,7 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
                 user,
                 block.timestamp + 300 // 5 minutes deadline
             );
-            
+
             amountOut = amounts[1];
         } else {
             // Swap token to token
@@ -386,10 +385,10 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
                 path[1] = WETH;
                 path[2] = tokenOut;
             }
-            
+
             uint256[] memory expectedAmounts = uniswapRouter.getAmountsOut(amountIn, path);
             uint256 amountOutMin = (expectedAmounts[expectedAmounts.length - 1] * (10000 - slippageTolerance)) / 10000;
-            
+
             uint256[] memory amounts = uniswapRouter.swapExactTokensForTokens(
                 amountIn,
                 amountOutMin,
@@ -397,10 +396,10 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
                 user,
                 block.timestamp + 300 // 5 minutes deadline
             );
-            
+
             amountOut = amounts[amounts.length - 1];
         }
-        
+
         emit SwapExecuted(user, tokenIn, tokenOut, amountIn, amountOut);
     }
 
@@ -411,7 +410,7 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
         address tokenOut
     ) external view returns (uint256 estimatedAmountOut) {
         address[] memory path;
-        
+
         if (tokenOut == address(0)) {
             // Estimate for ETH
             path = new address[](2);
@@ -429,7 +428,7 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
                 path[2] = tokenOut;
             }
         }
-        
+
         try uniswapRouter.getAmountsOut(amountIn, path) returns (uint256[] memory amounts) {
             estimatedAmountOut = amounts[amounts.length - 1];
         } catch {
@@ -441,7 +440,7 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
     function addSupportedToken(address token) external onlyOwner {
         supportedTokens[token] = true;
     }
-    
+
     function removeSupportedToken(address token) external onlyOwner {
         supportedTokens[token] = false;
     }
@@ -480,7 +479,7 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
             if (intent.isScheduled && !intent.executed && block.timestamp >= intent.executionTime) {
                 intent.executed = true;
                 processed++;
-                
+
                 // Execute swap if applicable
                 if (intent.tokenIn != address(0) && intent.amountIn > 0) {
                     // Call internal function directly without try/catch since it's internal
@@ -492,7 +491,7 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
                         intent.slippageTolerance
                     );
                 }
-                
+
                 _mint(intent.user, 1);
                 emit IntentExecuted(i, intent.user);
             }
