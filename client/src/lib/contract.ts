@@ -19,6 +19,8 @@ export const CONTRACT_CONFIG = {
     "function getUserBalance(address user, address token) external view returns (uint256)",
     "function getSwapEstimate(address tokenIn, uint256 amountIn, address tokenOut) external view returns (uint256)",
     "function supportedTokens(address) external view returns (bool)",
+    "function addSupportedToken(address token) external",
+    "function removeSupportedToken(address token) external",
     
     // NFT functions
     "function balanceOf(address owner) external view returns (uint256)",

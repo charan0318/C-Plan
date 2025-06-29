@@ -339,6 +339,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               console.log(`✅ DCA Swap simulated: ${dollarAmount} USDC → ${simulatedEthReceived} ETH at $${currentEthPrice}/ETH`);
               
+              // Update mock balance simulation - reduce USDC, increase WETH
+              const currentUsdcBalance = parseFloat(mockConnections.find(c => c.balances?.USDC_DEPOSITED)?.balances?.USDC_DEPOSITED || '3.399999');
+              const currentWethBalance = parseFloat(mockConnections.find(c => c.balances?.WETH_DEPOSITED)?.balances?.WETH_DEPOSITED || '0');
+              
+              // Find or create balance object
+              let balanceConnection = mockConnections.find(c => c.balances);
+              if (!balanceConnection) {
+                balanceConnection = { balances: {} };
+                mockConnections.push(balanceConnection);
+              }
+              
+              // Update balances: subtract USDC, add WETH
+              balanceConnection.balances.USDC_DEPOSITED = Math.max(0, currentUsdcBalance - dollarAmount).toFixed(6);
+              balanceConnection.balances.WETH_DEPOSITED = (currentWethBalance + parseFloat(simulatedEthReceived)).toFixed(6);
+              
+              console.log(`📊 Updated mock balances: USDC: ${balanceConnection.balances.USDC_DEPOSITED}, WETH: ${balanceConnection.balances.WETH_DEPOSITED}`);
+              
               executionMessage = `✅ DCA Executed (SIMULATED): Swapped ${dollarAmount} USDC → ${simulatedEthReceived} ETH at $${currentEthPrice}/ETH - Mock TX: ${mockTxHash}`;
               
               executionResult.transactionHash = mockTxHash;
@@ -515,6 +532,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Execute intent error:", error);
       res.status(500).json({ error: "Failed to execute intent" });
+    }
+  });
+
+  // Get token balances (mock endpoint)
+  app.get("/api/token-balances", async (req, res) => {
+    try {
+      // Return current mock balances from connections
+      const balanceConnection = mockConnections.find(c => c.balances);
+      const balances = balanceConnection?.balances || {
+        USDC: '0',
+        DAI: '0', 
+        WETH: '0',
+        USDC_DEPOSITED: '3.399999',
+        DAI_DEPOSITED: '0',
+        WETH_DEPOSITED: '0'
+      };
+      
+      console.log('📊 Serving token balances:', balances);
+      res.json(balances);
+    } catch (error) {
+      console.error("Balance fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch balances" });
     }
   });
 

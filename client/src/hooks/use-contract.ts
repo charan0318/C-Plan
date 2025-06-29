@@ -225,7 +225,7 @@ export function useContract() {
 
       // First, get all WALLET balances (what shows in MetaMask)
       console.log('📱 Fetching WALLET balances...');
-      
+
       // Get ETH balance in wallet
       try {
         const ethBalance = await walletState.provider.getBalance(address);
@@ -267,7 +267,7 @@ export function useContract() {
               tokenContract.symbol().catch(() => symbol)
             ]);
             console.log(`ℹ️ ${symbol} contract verified - Name: ${contractName}, Symbol: ${contractSymbol}`);
-            
+
             // Warn if symbol doesn't match
             if (!contractSymbol.includes(symbol) && !contractSymbol.includes(symbol.replace('W', ''))) {
               console.warn(`⚠️ Symbol mismatch for ${symbol}: expected ${symbol}, got ${contractSymbol}`);
@@ -280,7 +280,7 @@ export function useContract() {
           const decimals = symbol === 'USDC' ? 6 : 18;
           const balance = await tokenContract.balanceOf(address);
           balances[symbol] = ethers.formatUnits(balance, decimals);
-          
+
           console.log(`✅ ${symbol} wallet balance: ${balances[symbol]} (raw: ${balance.toString()})`);
 
         } catch (error) {
@@ -294,7 +294,7 @@ export function useContract() {
         console.log('📋 Fetching CONTRACT deposited balances...');
         try {
           const contract = getContract(walletState.provider);
-          
+
           // Get deposited token balances
           for (const [symbol, tokenAddress] of Object.entries(TOKENS)) {
             try {
@@ -331,7 +331,7 @@ export function useContract() {
       console.log('📊 FINAL BALANCE SUMMARY:');
       console.log('Wallet balances (MetaMask):', Object.entries(balances).filter(([k]) => !k.includes('_DEPOSITED')));
       console.log('Contract balances (DCA Pool):', Object.entries(balances).filter(([k]) => k.includes('_DEPOSITED')));
-      
+
       return balances;
     },
     enabled: isConnected && !!address && !!walletState.provider,
@@ -367,7 +367,7 @@ export function useContract() {
       try {
         const contract = getContractInstance();
         const tokenAddress = TOKENS[token as keyof typeof TOKENS];
-        
+
         // Use proper decimals for each token
         const decimals = token === 'USDC' ? 6 : 18;
         const amountInWei = ethers.parseUnits(amount, decimals);
@@ -443,7 +443,7 @@ export function useContract() {
       try {
         const contract = getContractInstance();
         const tokenAddress = TOKENS[token as keyof typeof TOKENS];
-        
+
         // Use proper decimals for each token
         const decimals = token === 'USDC' ? 6 : 18;
         const amountInWei = ethers.parseUnits(amount, decimals);
@@ -523,7 +523,7 @@ export function useContract() {
           wethContract.decimals()
         ]);
         console.log(`WETH Contract verified - Name: ${name}, Symbol: ${symbol}, Decimals: ${decimals}`);
-        
+
         // Additional verification that this is actually WETH
         if (!symbol.includes('WETH') && !symbol.includes('Wrapped')) {
           console.warn(`Warning: Contract symbol is ${symbol}, might not be WETH`);
@@ -565,7 +565,7 @@ export function useContract() {
         value: ethAmount,
         gasLimit: gasEstimate * 120n / 100n // Add 20% buffer
       });
-      
+
       console.log("Transaction sent:", tx.hash);
       console.log("Transaction details:", {
         to: tx.to,
@@ -598,11 +598,11 @@ export function useContract() {
           finalBalance = await wethContract.balanceOf(address);
           console.log(`Attempt ${attempts + 1}: WETH balance (wei):`, finalBalance.toString());
           console.log(`Attempt ${attempts + 1}: WETH balance (formatted):`, ethers.formatEther(finalBalance));
-          
+
           if (finalBalance > initialBalance) {
             break; // Balance updated successfully
           }
-          
+
           if (attempts < maxAttempts - 1) {
             console.log(`Balance not updated yet, waiting 2 seconds before retry ${attempts + 2}...`);
             await new Promise(resolve => setTimeout(resolve, 2000));
@@ -639,7 +639,7 @@ export function useContract() {
 
       // Immediate refresh
       queryClient.invalidateQueries({ queryKey: ['token-balances'] });
-      
+
       // Wait and refresh again
       setTimeout(async () => {
         console.log("Second balance refresh...");
@@ -709,23 +709,23 @@ export function useContract() {
     },
     onSuccess: async (data) => {
       console.log(`🎉 Swap transaction successful, refreshing balances...`);
-      
+
       // Aggressive balance refresh strategy
       queryClient.invalidateQueries({ queryKey: ['token-balances'] });
-      
+
       // Multiple refreshes with delays to catch blockchain state updates
       setTimeout(() => {
         console.log('First delayed balance refresh');
         queryClient.invalidateQueries({ queryKey: ['token-balances'] });
         refetchBalances();
       }, 2000);
-      
+
       setTimeout(() => {
         console.log('Second delayed balance refresh');
         queryClient.invalidateQueries({ queryKey: ['token-balances'] });
         refetchBalances();
       }, 5000);
-      
+
       setTimeout(() => {
         console.log('Third delayed balance refresh');
         queryClient.invalidateQueries({ queryKey: ['token-balances'] });
