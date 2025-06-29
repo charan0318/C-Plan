@@ -11,28 +11,60 @@ async function main() {
   const [signer] = await ethers.getSigners();
   console.log("Testing with account:", signer.address);
 
-  // Get contract instance
-  const WalletPlanner = await ethers.getContractFactory("WalletPlanner");
-  const contract = WalletPlanner.attach(contractAddress);
-
-  // Test token addresses (Sepolia)
-  const USDC = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
-  const DAI = "0xFF34B3d4Aee8ddCd6F9AFFFB6Fe49bD371b8a357";
-  const WETH = "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14";
-
   try {
+    // First, check if contract exists at the address
+    const code = await ethers.provider.getCode(contractAddress);
+    if (code === "0x") {
+      console.log("❌ No contract found at address:", contractAddress);
+      console.log("Please deploy the contract first using:");
+      console.log("npx hardhat run scripts/deploy.js --network localhost");
+      return;
+    }
+
+    console.log("✅ Contract found at address:", contractAddress);
+
+    // Get contract instance
+    const WalletPlanner = await ethers.getContractFactory("WalletPlanner");
+    const contract = WalletPlanner.attach(contractAddress);
+
+    // Test basic contract info first
+    console.log("\n0. Testing basic contract info...");
+    try {
+      const name = await contract.name();
+      const symbol = await contract.symbol();
+      console.log("Contract name:", name);
+      console.log("Contract symbol:", symbol);
+    } catch (error) {
+      console.error("❌ Error getting contract info:", error.message);
+      return;
+    }
+
+    // Test token addresses (Sepolia)
+    const USDC = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
+    const DAI = "0xFF34B3d4Aee8ddCd6F9AFFFB6Fe49bD371b8a357";
+    const WETH = "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14";
+
     console.log("\n1. Testing supported tokens...");
-    const usdcSupported = await contract.supportedTokens(USDC);
-    const daiSupported = await contract.supportedTokens(DAI);
-    const wethSupported = await contract.supportedTokens(WETH);
-    
-    console.log("USDC supported:", usdcSupported);
-    console.log("DAI supported:", daiSupported);
-    console.log("WETH supported:", wethSupported);
+    try {
+      const usdcSupported = await contract.supportedTokens(USDC);
+      const daiSupported = await contract.supportedTokens(DAI);
+      const wethSupported = await contract.supportedTokens(WETH);
+      
+      console.log("USDC supported:", usdcSupported);
+      console.log("DAI supported:", daiSupported);
+      console.log("WETH supported:", wethSupported);
+    } catch (error) {
+      console.error("❌ Error checking supported tokens:", error.message);
+      console.log("This might indicate the contract doesn't have the supportedTokens function");
+    }
 
     console.log("\n2. Testing balance check...");
-    const usdcBalance = await contract.getUserBalance(signer.address, USDC);
-    console.log("User USDC balance in contract:", ethers.formatUnits(usdcBalance, 6));
+    try {
+      const usdcBalance = await contract.getUserBalance(signer.address, USDC);
+      console.log("User USDC balance in contract:", ethers.formatUnits(usdcBalance, 6));
+    } catch (error) {
+      console.error("❌ Error checking balance:", error.message);
+    }
 
     console.log("\n3. Testing swap estimate...");
     const amountIn = ethers.parseUnits("100", 6); // 100 USDC
