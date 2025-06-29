@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,14 +7,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { useContract } from "@/hooks/use-contract";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Upload, CheckCircle } from "lucide-react";
+import { ArrowDown, ArrowUp, Loader2, CheckCircle } from "lucide-react";
 
 export function TokenDeposit() {
   const [selectedToken, setSelectedToken] = useState<string>("");
   const [amount, setAmount] = useState<string>("");
   const [isApproving, setIsApproving] = useState(false);
-  
-  const { depositToken, isDepositingToken, tokenBalances } = useContract();
+
+  const { depositToken, isDepositingToken, tokenBalances, withdrawToken, isWithdrawingToken } = useContract();
   const { toast } = useToast();
 
   const supportedTokens = [
@@ -41,6 +40,28 @@ export function TokenDeposit() {
       setSelectedToken("");
     } catch (error: any) {
       console.error("Deposit error:", error);
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
+  const handleWithdraw = async () => {
+    if (!selectedToken || !amount) {
+      toast({
+        title: "Invalid Input",
+        description: "Please select a token and enter an amount",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsApproving(true);
+      await withdrawToken({ token: selectedToken, amount });
+      setAmount("");
+      setSelectedToken("");
+    } catch (error: any) {
+      console.error("Withdraw error:", error);
     } finally {
       setIsApproving(false);
     }
@@ -83,7 +104,7 @@ export function TokenDeposit() {
               ))}
             </SelectContent>
           </Select>
-          
+
           {selectedToken && (
             <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <span className="text-sm text-gray-600 dark:text-gray-400">Wallet Balance:</span>
@@ -115,7 +136,7 @@ export function TokenDeposit() {
               </div>
             )}
           </div>
-          
+
           {selectedToken && (
             <div className="flex space-x-2">
               <Button
@@ -150,28 +171,54 @@ export function TokenDeposit() {
           )}
         </div>
 
-        <Button
-          onClick={handleDeposit}
-          disabled={!selectedToken || !amount || isDepositingToken || isApproving}
-          className="w-full"
-        >
-          {isApproving ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Approving & Depositing...
-            </>
-          ) : isDepositingToken ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Depositing...
-            </>
-          ) : (
-            <>
-              <CheckCircle className="mr-2 h-4 w-4" />
-              Deposit Tokens
-            </>
-          )}
-        </Button>
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            onClick={handleDeposit}
+            disabled={!selectedToken || !amount || isDepositingToken || isApproving}
+            className="w-full"
+          >
+            {isApproving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Approving & Depositing...
+              </>
+            ) : isDepositingToken ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Depositing...
+              </>
+            ) : (
+              <>
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Deposit
+              </>
+            )}
+          </Button>
+
+          <Button
+            onClick={handleWithdraw}
+            disabled={!selectedToken || !amount || isWithdrawingToken || isApproving}
+            variant="outline"
+            className="w-full"
+          >
+            {isApproving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Approving & Withdrawing...
+              </>
+            ) : isWithdrawingToken ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Withdrawing...
+              </>
+            ) : (
+              <>
+                <ArrowUp className="mr-2 h-4 w-4" />
+                Withdraw
+              </>
+            )}
+          </Button>
+        </div>
 
         <div className="text-xs text-gray-500 space-y-1">
           <p>• This will approve and deposit tokens to the contract</p>
