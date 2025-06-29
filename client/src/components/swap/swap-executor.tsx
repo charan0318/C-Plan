@@ -25,8 +25,6 @@ export function SwapExecutor() {
   const { toast } = useToast();
 
   const tokens = [
-    { symbol: 'USDC', name: 'USD Coin', icon: '💵' },
-    { symbol: 'DAI', name: 'DAI Stablecoin', icon: '🪙' },
     { symbol: 'WETH', name: 'Wrapped Ether', icon: '🔄' },
     { symbol: 'ETH', name: 'Ethereum', icon: '⚡' }
   ];
@@ -36,6 +34,19 @@ export function SwapExecutor() {
       toast({
         title: "Invalid Input",
         description: "Please fill in all swap details",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate token balance
+    const availableBalance = parseFloat(getContractBalance(tokenIn));
+    const requestedAmount = parseFloat(amountIn);
+    
+    if (requestedAmount > availableBalance) {
+      toast({
+        title: "Insufficient Balance",
+        description: `You only have ${availableBalance} ${tokenIn} available`,
         variant: "destructive",
       });
       return;
@@ -79,6 +90,22 @@ export function SwapExecutor() {
       }
     } catch (error: any) {
       setTxStatus('error');
+      let errorMessage = "Failed to execute swap";
+      
+      if (error.message.includes("INVALID_PATH")) {
+        errorMessage = "Invalid swap path - this token pair may not be supported on Sepolia testnet";
+      } else if (error.message.includes("INSUFFICIENT_LIQUIDITY")) {
+        errorMessage = "Insufficient liquidity for this swap on Sepolia testnet";
+      } else if (error.message.includes("execution reverted")) {
+        errorMessage = "Swap failed - check token balances and try again";
+      }
+      
+      toast({
+        title: "Swap Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      
       console.error("Swap error:", error);
     }
   };
@@ -266,9 +293,10 @@ export function SwapExecutor() {
         )}
 
         <div className="text-xs text-gray-500 space-y-1">
-          <p>• Swaps use Uniswap V2 on Sepolia testnet</p>
+          <p>• ⚠️ Limited token pairs available on Sepolia testnet</p>
+          <p>• WETH ↔ ETH swaps are most reliable for testing</p>
           <p>• Make sure you have deposited tokens first</p>
-          <p>• Slippage protects against price changes</p>
+          <p>• Some token pairs may not have liquidity pools</p>
         </div>
       </CardContent>
     </Card>
