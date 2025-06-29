@@ -22,7 +22,7 @@ export function useWallet() {
 
   const queryClient = useQueryClient();
 
-  // Fetch wallet connections - always enable but handle empty state
+  // Always call useQuery - no conditional hooks
   const { data: connections = [] } = useQuery<WalletConnection[]>({
     queryKey: ["/api/wallet/connections"],
     queryFn: async () => {
@@ -31,10 +31,11 @@ export function useWallet() {
       return response.json();
     },
     retry: 1,
-    staleTime: 5 * 60 * 1000
+    staleTime: 5 * 60 * 1000,
+    enabled: true // Always enabled, no conditional logic
   });
 
-  // Connect wallet mutation
+  // Always call useMutation - no conditional hooks
   const connectWalletMutation = useMutation({
     mutationFn: async ({ address, chainId }: { address: string; chainId: number }) => {
       const response = await apiRequest("POST", "/api/wallet/connect", {
@@ -48,7 +49,6 @@ export function useWallet() {
     }
   });
 
-  // Disconnect wallet mutation
   const disconnectWalletMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/wallet/disconnect", {});
@@ -63,11 +63,9 @@ export function useWallet() {
     setWalletState(prev => ({ ...prev, isConnecting: true }));
     
     try {
-      // Check if MetaMask is available
       if (typeof window !== 'undefined' && window.ethereum) {
         const provider = new ethers.BrowserProvider(window.ethereum);
         
-        // Request account access
         await provider.send("eth_requestAccounts", []);
         
         const signer = await provider.getSigner();
@@ -75,24 +73,13 @@ export function useWallet() {
         const network = await provider.getNetwork();
         const chainId = Number(network.chainId);
 
-        // Force Sepolia testnet (11155111) - this is required
         if (chainId !== 11155111) {
           try {
-            // Try to switch to Sepolia
             await window.ethereum.request({
               method: 'wallet_switchEthereumChain',
-              params: [{ chainId: '0xaa36a7' }], // Sepolia chainId in hex
+              params: [{ chainId: '0xaa36a7' }],
             });
-            
-            // Get network info after switching
-            const newNetwork = await provider.getNetwork();
-            const newChainId = Number(newNetwork.chainId);
-            
-            if (newChainId !== 11155111) {
-              throw new Error("Must be connected to Sepolia testnet");
-            }
           } catch (switchError: any) {
-            // If the chain doesn't exist, add it
             if (switchError.code === 4902) {
               await window.ethereum.request({
                 method: 'wallet_addEthereumChain',
@@ -109,7 +96,6 @@ export function useWallet() {
                 }]
               });
               
-              // After adding, try to switch again
               await window.ethereum.request({
                 method: 'wallet_switchEthereumChain',
                 params: [{ chainId: '0xaa36a7' }],
@@ -120,13 +106,11 @@ export function useWallet() {
           }
         }
 
-        // Get final network info after potential switching
         const finalNetwork = await provider.getNetwork();
         const finalChainId = Number(finalNetwork.chainId);
         const finalSigner = await provider.getSigner();
         const finalAddress = await finalSigner.getAddress();
 
-        // Only proceed if we're on Sepolia
         if (finalChainId !== 11155111) {
           throw new Error("Connection failed: Must be on Sepolia testnet");
         }
@@ -162,7 +146,6 @@ export function useWallet() {
       });
     } catch (error) {
       console.error("Disconnect error:", error);
-      // Still disconnect locally even if server call fails
       setWalletState({
         isConnected: false,
         isConnecting: false
@@ -170,14 +153,13 @@ export function useWallet() {
     }
   };
 
-  // Listen for account changes - only when connected
+  // Always call useEffect - ensure hooks are in consistent order
   useEffect(() => {
     if (typeof window !== 'undefined' && window.ethereum && walletState.isConnected) {
       const handleAccountsChanged = (accounts: string[]) => {
         if (accounts.length === 0) {
           disconnectWallet();
         } else if (accounts[0] !== walletState.address) {
-          // Reconnect with new account
           connectWallet();
         }
       };
@@ -185,7 +167,6 @@ export function useWallet() {
       const handleChainChanged = (chainId: string) => {
         const newChainId = parseInt(chainId, 16);
         if (newChainId !== 11155111) {
-          // If switched away from Sepolia, disconnect
           disconnectWallet();
         }
       };
@@ -208,7 +189,6 @@ export function useWallet() {
   };
 }
 
-// Extend Window interface for TypeScript
 declare global {
   interface Window {
     ethereum?: any;
