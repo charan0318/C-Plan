@@ -1,5 +1,5 @@
 
-import { elizaService } from '../server/elizaService.ts';
+import { elizaService } from '../server/elizaService.js';
 
 async function verifyAllLayers() {
   console.log("🚀 C-PLAN SYSTEM VERIFICATION\n");
