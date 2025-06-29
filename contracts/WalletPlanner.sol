@@ -105,7 +105,12 @@ contract WalletPlanner is ERC721Base, AutomationCompatible, ReentrancyGuard {
             _royaltyBps
         )
     {
-        uniswapRouter = IUniswapV2Router02(_uniswapRouter);
+        if (_uniswapRouter != address(0)) {
+            uniswapRouter = IUniswapV2Router02(_uniswapRouter);
+        } else {
+            // Default Sepolia Uniswap V2 Router
+            uniswapRouter = IUniswapV2Router02(0xC532a74256D3Db42D0Bf7a0400fEFDbad7694008);
+        }
         
         // Set supported tokens
         supportedTokens[USDC] = true;

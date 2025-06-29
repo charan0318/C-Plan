@@ -16,7 +16,8 @@ async function main() {
     "C-PLAN Wallet Intents", // name
     "CPLAN", // symbol
     deployer.address, // royaltyRecipient
-    250 // 2.5% royalty (250 basis points)
+    250, // 2.5% royalty (250 basis points)
+    "0xC532a74256D3Db42D0Bf7a0400fEFDbad7694008" // Sepolia Uniswap V2 Router
   );
 
   await walletPlanner.waitForDeployment();
