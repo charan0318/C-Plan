@@ -118,43 +118,6 @@ export function TokenBalances() {
             )}
           </div>
         </div>
-
-        {/* ETH Price */}
-        {ethPrice > 0 && (
-          <div className="flex items-center justify-between p-2 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
-            <div className="flex items-center space-x-2">
-              <TrendingUp className="h-4 w-4 text-green-600" />
-              <span className="text-sm font-medium">ETH Price</span>
-            </div>
-            <div className="text-right">
-              <div className="font-mono text-sm font-bold">
-                ${ethPrice.toFixed(2)}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Token Address Verification */}
-        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-          <h4 className="text-sm font-medium mb-2 text-blue-800 dark:text-blue-200">🔍 Token Contract Addresses</h4>
-          <div className="space-y-1 text-xs">
-            <div>USDC: <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238</code></div>
-            <div>DAI: <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">0xFF34B3d4Aee8ddCd6F9AFFFB6Fe49bD371b8a357</code></div>
-            <div>WETH: <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14</code></div>
-          </div>
-        </div>
-
-        {/* Explanation */}
-        <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-          <p className="text-xs text-green-800 dark:text-green-200">
-            🎯 <strong>DCA Earnings Explanation:</strong><br/>
-            • <strong>MetaMask (Wallet)</strong> = Your personal token storage<br/>
-            • <strong>Smart Contract (DCA Pool)</strong> = Where DCA swaps earn tokens<br/>
-            • ✅ <strong>DCA swaps automatically earn WETH in the contract</strong><br/>
-            • 💰 <strong>Check "Contract balances" below to see your DCA earnings</strong><br/>
-            • 🔄 <strong>Use "Withdraw to MetaMask" to move earnings to your wallet</strong>
-          </p>
-        </div>
       </CardContent>
     </Card>
   );
