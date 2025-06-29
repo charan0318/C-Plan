@@ -1,5 +1,5 @@
 
-const hre = require("hardhat");
+import hre from "hardhat";
 const { ethers } = hre;
 
 async function main() {

@@ -1,11 +1,11 @@
-
-const { ethers } = require("hardhat");
+import hre from "hardhat";
+const { ethers } = hre;
 
 async function main() {
   console.log("Testing deployed WalletPlanner contract...");
 
   const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-  
+
   const [signer] = await ethers.getSigners();
   console.log("Testing with account:", signer.address);
 
@@ -22,7 +22,7 @@ async function main() {
 
     console.log("\n2. Testing supported tokens...");
     const USDC = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
-    
+
     // Try calling supportedTokens function
     try {
       const isSupported = await contract.supportedTokens(USDC);

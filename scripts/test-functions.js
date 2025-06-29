@@ -1,6 +1,6 @@
 
-const hre = require("hardhat");
-const fs = require("fs");
+import hre from "hardhat";
+import fs from "fs";
 const { ethers } = hre;
 
 async function main() {
