@@ -313,23 +313,23 @@ export default function Dashboard() {
         <div className="mb-8 animate-fade-in">
           <div className="flex items-center justify-between">
             <div>
-              <Badge variant="outline" className="mb-4 px-4 py-2 glass-card-light neon-border text-blue-300">
+              <Badge className="mb-4 px-4 py-2 bg-primary/10 text-primary border-primary/20">
                 <Bot className="mr-2 h-4 w-4" />
-                AI Dashboard
+                AI Wallet Dashboard
               </Badge>
-              <h1 className="text-4xl md:text-5xl font-bold text-white mb-2 neon-text">
-                Wallet
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400 ml-3">
-                  Command Center
+              <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-2">
+                Smart Wallet
+                <span className="bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent ml-3">
+                  Hub
                 </span>
               </h1>
-              <p className="text-blue-200">Monitor and manage your automated trading strategies</p>
+              <p className="text-muted-foreground text-lg">Monitor and manage your automated trading strategies</p>
             </div>
 
             <Button 
               onClick={handleRefresh}
               variant="outline"
-              className="glass-card-light border-blue-400/30 text-blue-100 hover:bg-blue-500/10 neon-border"
+              className="hover-lift"
             >
               <RefreshCw className="mr-2 h-4 w-4" />
               Refresh
@@ -344,24 +344,24 @@ export default function Dashboard() {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="overview" className="animate-scale-in">
-          <TabsList className="glass-card border border-blue-500/20 mb-6">
+          <TabsList className="modern-card p-1 mb-6">
             <TabsTrigger 
               value="overview" 
-              className="data-[state=active]:bg-blue-600/20 data-[state=active]:text-blue-100 text-blue-300"
+              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
             >
               <Activity className="mr-2 h-4 w-4" />
               Overview
             </TabsTrigger>
             <TabsTrigger 
               value="wallet" 
-              className="data-[state=active]:bg-blue-600/20 data-[state=active]:text-blue-100 text-blue-300"
+              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
             >
               <Wallet className="mr-2 h-4 w-4" />
               Wallet
             </TabsTrigger>
             <TabsTrigger 
               value="trading" 
-              className="data-[state=active]:bg-blue-600/20 data-[state=active]:text-blue-100 text-blue-300"
+              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
             >
               <TrendingUp className="mr-2 h-4 w-4" />
               Trading
@@ -371,10 +371,12 @@ export default function Dashboard() {
           <TabsContent value="overview" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Plans Table */}
-              <Card className="glass-card border-blue-500/20 hover:neon-border transition-all duration-500">
+              <Card className="modern-card-elevated hover-lift">
                 <CardHeader>
-                  <CardTitle className="text-white flex items-center">
-                    <Zap className="mr-2 h-5 w-5 text-blue-400" />
+                  <CardTitle className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <Zap className="h-5 w-5 text-primary" />
+                    </div>
                     Active Plans
                   </CardTitle>
                 </CardHeader>
@@ -384,10 +386,12 @@ export default function Dashboard() {
               </Card>
 
               {/* ETH Price Monitor */}
-              <Card className="glass-card border-blue-500/20 hover:neon-border transition-all duration-500">
+              <Card className="modern-card-elevated hover-lift">
                 <CardHeader>
-                  <CardTitle className="text-white flex items-center">
-                    <TrendingUp className="mr-2 h-5 w-5 text-green-400" />
+                  <CardTitle className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/20">
+                      <TrendingUp className="h-5 w-5 text-green-600" />
+                    </div>
                     Market Monitor
                   </CardTitle>
                 </CardHeader>
@@ -430,21 +434,19 @@ export default function Dashboard() {
           <TabsContent value="wallet" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-6">
-                <Card className="glass-card border-blue-500/20 hover:neon-border transition-all duration-500">
+                <Card className="modern-card-elevated hover-lift">
                   <TokenBalances />
                 </Card>
               </div>
 
               <div className="space-y-6">
-                <Card className="glass-card border-blue-500/20 hover:neon-border transition-all duration-500">
-                  <TokenDeposit />
-                </Card>
+                <TokenDeposit />
               </div>
             </div>
           </TabsContent>
 
           <TabsContent value="trading" className="space-y-6">
-            <Card className="glass-card border-green-500/20 hover:neon-border transition-all duration-500">
+            <Card className="modern-card-elevated hover-lift">
               <SwapExecutor />
             </Card>
           </TabsContent>
