@@ -49,46 +49,6 @@ export class MemStorage implements IStorage {
     this.chatMessages = new Map();
     this.nftTokens = [];
     this.currentId = 1;
-
-    // Initialize with mock data for demonstration
-    this.initializeMockData();
-  }
-
-  private initializeMockData() {
-    // Create mock user
-    const mockUser: User = {
-      id: 1,
-      username: "demo_user",
-      password: "hashed_password"
-    };
-    this.users.set(1, mockUser);
-
-    // Create mock wallet connection
-    const mockWallet: WalletConnection = {
-      id: 1,
-      userId: 1,
-      walletAddress: "0x742d35Cc6639Cf532793a3f8a",
-      chainId: 11155111, // Sepolia
-      isActive: true,
-      createdAt: new Date()
-    };
-    this.walletConnections.set(1, mockWallet);
-
-
-
-    // Create mock execution history
-    const mockExecution: ExecutionHistory = {
-      id: 1,
-      intentId: 1,
-      status: "SUCCESS",
-      result: "Successfully staked 100 USDC",
-      gasUsed: "21000",
-      transactionHash: "0xabc123def456",
-      executedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-    };
-    this.executionHistory.set(1, mockExecution);
-
-    this.currentId = 10; // Start IDs from 10 to avoid conflicts
   }
 
   async getUser(id: number): Promise<User | undefined> {

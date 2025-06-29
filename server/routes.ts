@@ -22,13 +22,22 @@ const addWalletConnection = ({ userId, walletAddress, chainId }) => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Get user's wallet connections
+  // Wallet connections
   app.get("/api/wallet/connections", async (req, res) => {
     try {
-      const userId = 1; // Mock user ID for demo
-      const connections = await storage.getWalletConnections(userId);
+      // Create a default user if none exists
+      let user = await storage.getUserByUsername("default_user");
+      if (!user) {
+        user = await storage.createUser({
+          username: "default_user",
+          password: "temp_password"
+        });
+      }
+
+      const connections = await storage.getWalletConnections(user.id);
       res.json(connections);
     } catch (error) {
+      console.error("Error fetching wallet connections:", error);
       res.status(500).json({ error: "Failed to fetch wallet connections" });
     }
   });
@@ -73,13 +82,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get user's intents
+  // Get intents for user
   app.get("/api/intents", async (req, res) => {
     try {
-      const userId = 1; // Mock user ID for demo
-      const intents = await storage.getIntents(userId);
+      // Create a default user if none exists
+      let user = await storage.getUserByUsername("default_user");
+      if (!user) {
+        user = await storage.createUser({
+          username: "default_user",
+          password: "temp_password"
+        });
+      }
+
+      const intents = await storage.getIntents(user.id);
       res.json(intents);
     } catch (error) {
+      console.error("Error fetching intents:", error);
       res.status(500).json({ error: "Failed to fetch intents" });
     }
   });
@@ -141,7 +159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         storage.nftTokens = [];
       }
       storage.nftTokens.push(nftToken);
-      
+
       res.json({ 
         success: true, 
         intent: updatedIntent,
@@ -174,7 +192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const intents = await storage.getIntents(userId);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      
+
       const executedToday = intents.filter(intent => 
         intent.executed && new Date(intent.updatedAt) >= today
       ).length;
@@ -189,97 +207,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create new intent with smart contract integration
+  // Create intent
   app.post("/api/intents", async (req, res) => {
     try {
-      console.log("Intent creation request:", req.body);
-      
-      if (!req.body || Object.keys(req.body).length === 0) {
-        return res.status(400).json({ 
-          error: "Request body is required",
-          message: "Please provide intent data" 
+      const { description, estimatedCost, walletAddress, title, action, token, amount, frequency, conditions, targetChain } = req.body;
+
+      // Create a default user if none exists
+      let user = await storage.getUserByUsername("default_user");
+      if (!user) {
+        user = await storage.createUser({
+          username: "default_user",
+          password: "temp_password"
         });
       }
 
-      const { userId = 1, walletAddress, title, description, action = "GENERAL", token = "ETH", amount, frequency = "ONCE", conditions = {}, targetChain = "ethereum-sepolia", elizaParsed = null } = req.body;
-      
-      // Validate required fields
-      if (!description) {
-        return res.status(400).json({
-          error: "Description is required",
-          message: "Please provide a description for your intent"
-        });
-      }
-      
-      if (!amount) {
-        return res.status(400).json({
-          error: "Amount is required", 
-          message: "Please provide an estimated cost"
-        });
-      }
-
-      // Prepare smart contract parameters
-      const intentDescription = JSON.stringify({
-        task: elizaParsed?.task || action.toLowerCase(),
-        token: token,
-        amount: parseFloat(amount) || 0,
-        frequency: frequency?.toLowerCase() || "weekly",
-        day: elizaParsed?.day,
-        receiver: elizaParsed?.receiver,
-        condition: elizaParsed?.condition || conditions,
-        userAddress: walletAddress,
-        createdAt: new Date().toISOString()
-      });
-
-      // Estimate cost (mock calculation)
-      const estimatedCost = Math.floor(Math.random() * 100) + 10; // $10-$110
-
-      // Create database entry using proper storage method
-      const newIntent = await storage.createIntent({
-        userId,
-        walletAddress,
-        title,
+      const intent = await storage.createIntent({
+        userId: user.id,
+        walletAddress: walletAddress || "0x0000000000000000000000000000000000000000",
+        title: title || description,
         description,
-        action,
-        token,
-        amount,
-        frequency,
-        conditions: elizaParsed?.condition || conditions,
-        targetChain,
-        isActive: true,
-        nextExecution: null,
-        lastExecution: null
+        action: action || "swap",
+        token: token || "ETH",
+        amount: amount || null,
+        frequency: frequency || null,
+        conditions: conditions || null,
+        targetChain: targetChain || 11155111,
+        isActive: true
       });
 
-      // Simulate blockchain interaction (in production, use actual contract calls)
-      setTimeout(async () => {
-        try {
-          // Simulate Chainlink Functions validation
-          const functionsAnalysis = await simulateChainlinkFunctions(intentDescription, estimatedCost, walletAddress);
-
-          // Update intent with blockchain confirmation
-          await storage.updateIntent(newIntent.id, {
-            status: functionsAnalysis.feasible ? 'active' : 'validation_failed'
-          });
-
-          // Add execution history entry
-          await storage.createExecutionHistory({
-            intentId: newIntent.id,
-            status: functionsAnalysis.feasible ? 'SUCCESS' : 'FAILED',
-            result: `Intent ${functionsAnalysis.feasible ? 'validated and scheduled' : 'validation failed'}: ${functionsAnalysis.confidence}% confidence`
-          });
-        } catch (error) {
-          console.error('Blockchain simulation error:', error);
-        }
-      }, 2000); // 2 second delay to simulate blockchain processing
-
-      res.json(newIntent);
-    } catch (error: any) {
-      console.error("Intent creation error:", error);
-      res.status(500).json({ 
-        error: error.message || "Internal server error",
-        message: "Failed to create intent"
-      });
+      res.json(intent);
+    } catch (error) {
+      console.error("Error creating intent:", error);
+      res.status(500).json({ error: "Failed to create intent" });
     }
   });
 
@@ -312,6 +271,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: "Failed to delete intent" });
+    }
+  });
+
+  // Get chat messages
+  app.get("/api/chat/messages", async (req, res) => {
+    try {
+      // Create a default user if none exists
+      let user = await storage.getUserByUsername("default_user");
+      if (!user) {
+        user = await storage.createUser({
+          username: "default_user",
+          password: "temp_password"
+        });
+      }
+
+      const messages = await storage.getChatMessages(user.id);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching chat messages:", error);
+      res.status(500).json({ error: "Failed to fetch chat messages" });
+    }
+  });
+
+  // Create chat message
+  app.post("/api/chat/messages", async (req, res) => {
+    try {
+      const { message, isAgent, agentResponse } = req.body;
+
+      // Create a default user if none exists
+      let user = await storage.getUserByUsername("default_user");
+      if (!user) {
+        user = await storage.createUser({
+          username: "default_user",
+          password: "temp_password"
+        });
+      }
+
+      const newMessage = await storage.createChatMessage({
+        userId: user.id,
+        message,
+        isAgent: isAgent || false,
+        agentResponse: agentResponse || null
+      });
+
+      res.json(newMessage);
+    } catch (error) {
+      console.error("Error creating chat message:", error);
+      res.status(500).json({ error: "Failed to create chat message" });
     }
   });
 
@@ -472,7 +479,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const intentId = parseInt(req.params.id);
       const intent = await storage.getIntent(intentId);
-      
+
       if (!intent) {
         return res.status(404).json({ error: 'Intent not found' });
       }
@@ -480,7 +487,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Mock current market conditions
       const currentETH = 2341; // Current ETH price in USD
       const targetPrice = 1000; // Your trigger price
-      
+
       const status = {
         isMonitoring: intent.isActive,
         currentConditions: {
@@ -492,7 +499,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lastCheck: new Date(),
         estimatedExecution: currentETH < targetPrice ? 'Immediate' : 'When ETH drops below $1000'
       };
-      
+
       res.json(status);
     } catch (error) {
       res.status(500).json({ error: 'Failed to get intent status' });
@@ -504,7 +511,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = 1; // Mock user ID for demo
       const intents = await storage.getIntents(userId);
-      
+
       const activePlans = intents.filter(i => i.isActive).length;
       const today = new Date().toDateString();
 
