@@ -1,0 +1,50 @@
+dashboard.tsx:180   POST https://1c7160b7-d7e2-47ce-8e0a-dc68a432f503-00-23twcx5k16mbw.spock.replit.dev/api/intents/4/execute 400 (Bad Request)
+mutationFn @ dashboard.tsx:180
+fn @ mutation.ts:174
+run @ retryer.ts:153
+start @ retryer.ts:218
+execute @ mutation.ts:213
+await in execute
+mutate @ mutationObserver.ts:125
+handleExecuteIntent @ dashboard.tsx:237
+onClick @ dashboard.tsx:418
+callCallback2 @ react-dom.development.js:4164
+invokeGuardedCallbackDev @ react-dom.development.js:4213
+invokeGuardedCallback @ react-dom.development.js:4277
+invokeGuardedCallbackAndCatchFirstError @ react-dom.development.js:4291
+executeDispatch @ react-dom.development.js:9041
+processDispatchQueueItemsInOrder @ react-dom.development.js:9073
+processDispatchQueue @ react-dom.development.js:9086
+dispatchEventsForPlugins @ react-dom.development.js:9097
+(anonymous) @ react-dom.development.js:9288
+batchedUpdates$1 @ react-dom.development.js:26179
+batchedUpdates @ react-dom.development.js:3991
+dispatchEventForPluginEventSystem @ react-dom.development.js:9287
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ react-dom.development.js:6465
+dispatchEvent @ react-dom.development.js:6457
+dispatchDiscreteEvent @ react-dom.development.js:6430
+dashboard.tsx:239  Failed to execute intent: Error: Failed to execute DCA swap on-chain: missing revert data (action="estimateGas", data=null, reason=null, transaction={ "data": "0x685b2bcc0000000000000000000000001c7d4b196cb0c7b01d743fbc6116a902379c723800000000000000000000000000000000000000000000000000000000000f4240000000000000000000000000fff9976782d46cc05630d1f6ebab18b2324d6b14000000000000000000000000c0d5045879b6d52457ef361fd4384b0f08a6b64b000000000000000000000000000000000000000000000000000000000000012c", "from": "0x2F066f4742a2E41a397C78bbEAB857eeb8dedF03", "to": "0xc0d5045879B6d52457ef361FD4384b0f08A6B64b" }, invocation=null, revert=null, code=CALL_EXCEPTION, version=6.14.4)
+    at Object.mutationFn (dashboard.tsx:193:15)
+handleExecuteIntent @ dashboard.tsx:239
+await in handleExecuteIntent
+onClick @ dashboard.tsx:418
+callCallback2 @ react-dom.development.js:4164
+invokeGuardedCallbackDev @ react-dom.development.js:4213
+invokeGuardedCallback @ react-dom.development.js:4277
+invokeGuardedCallbackAndCatchFirstError @ react-dom.development.js:4291
+executeDispatch @ react-dom.development.js:9041
+processDispatchQueueItemsInOrder @ react-dom.development.js:9073
+processDispatchQueue @ react-dom.development.js:9086
+dispatchEventsForPlugins @ react-dom.development.js:9097
+(anonymous) @ react-dom.development.js:9288
+batchedUpdates$1 @ react-dom.development.js:26179
+batchedUpdates @ react-dom.development.js:3991
+dispatchEventForPluginEventSystem @ react-dom.development.js:9287
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ react-dom.development.js:6465
+dispatchEvent @ react-dom.development.js:6457
+dispatchDiscreteEvent @ react-dom.development.js:6430
+[NEW] Explain Console errors by using Copilot in Edge: click
+         
+         to explain an error. 
+        Learn more
+        Don't show again
