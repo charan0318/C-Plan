@@ -2,18 +2,43 @@ import { ethers } from "ethers";
 
 // Contract configuration
 export const CONTRACT_CONFIG = {
-  address: "0x1234567890123456789012345678901234567890", // Placeholder deployed address
+  address: "0xCA0d255BC0c66E3dDD974EA5E260E690d17c22aa", // Enhanced WalletPlanner address
   abi: [
+    // Legacy functions
     "function createIntent(string memory description, uint256 estimatedCost) external returns (uint256)",
     "function executeIntent(uint256 intentId) external",
     "function getUserIntents(address user) external view returns (uint256[] memory)",
-    "function getIntent(uint256 intentId) external view returns (tuple(uint256 id, address user, string description, uint256 estimatedCost, bool executed, uint256 timestamp))",
+    "function getIntent(uint256 intentId) external view returns (tuple(uint256 id, address user, string description, uint256 estimatedCost, uint256 timestamp, uint256 executionTime, bool executed, bool isScheduled, address tokenIn, uint256 amountIn, address tokenOut, uint256 slippageTolerance))",
+    
+    // New swap functions
+    "function depositToken(address token, uint256 amount) external",
+    "function withdrawToken(address token, uint256 amount) external",
+    "function executeSwap(address tokenIn, uint256 amountIn, address tokenOut, address recipient, uint256 slippageTolerance) external returns (uint256)",
+    "function createSwapIntent(string memory description, uint256 estimatedCost, address tokenIn, uint256 amountIn, address tokenOut, uint256 slippageTolerance) external returns (uint256)",
+    "function createScheduledSwapIntent(string memory description, uint256 estimatedCost, uint256 executionTime, address tokenIn, uint256 amountIn, address tokenOut, uint256 slippageTolerance) external returns (uint256)",
+    "function getUserBalance(address user, address token) external view returns (uint256)",
+    "function getSwapEstimate(address tokenIn, uint256 amountIn, address tokenOut) external view returns (uint256)",
+    "function supportedTokens(address) external view returns (bool)",
+    
+    // NFT functions
     "function balanceOf(address owner) external view returns (uint256)",
     "function name() external view returns (string)",
     "function symbol() external view returns (string)",
+    
+    // Events
     "event IntentCreated(uint256 indexed intentId, address indexed user, string description)",
-    "event IntentExecuted(uint256 indexed intentId, address indexed user)"
+    "event IntentExecuted(uint256 indexed intentId, address indexed user)",
+    "event TokenDeposited(address indexed user, address indexed token, uint256 amount)",
+    "event TokenWithdrawn(address indexed user, address indexed token, uint256 amount)",
+    "event SwapExecuted(address indexed user, address indexed tokenIn, address indexed tokenOut, uint256 amountIn, uint256 amountOut)"
   ]
+};
+
+// Sepolia testnet token addresses
+export const TOKENS = {
+  USDC: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+  DAI: "0xFF34B3d4Aee8ddCd6F9AFFFB6Fe49bD371b8a357", 
+  WETH: "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14"
 };
 
 export function getContract(provider: ethers.Provider, signer?: ethers.Signer) {
