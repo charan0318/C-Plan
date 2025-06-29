@@ -1,5 +1,5 @@
 
-const { elizaService } = require('../server/elizaService.js');
+import { elizaService } from '../server/elizaService.js';
 
 async function verifyAllLayers() {
   console.log("🚀 C-PLAN SYSTEM VERIFICATION\n");
@@ -157,7 +157,7 @@ async function verifyAllLayers() {
   console.log("");
 
   // Summary
-  console.log("=" * 50);
+  console.log("=".repeat(50));
   if (allPassed) {
     console.log("🎉 ALL LAYERS VERIFIED SUCCESSFULLY!");
     console.log("");
@@ -170,7 +170,7 @@ async function verifyAllLayers() {
     console.log("⚠️  SOME LAYERS NEED ATTENTION");
     console.log("Check the details above for specific issues.");
   }
-  console.log("=" * 50);
+  console.log("=".repeat(50));
 }
 
 verifyAllLayers().catch(console.error);
