@@ -7,11 +7,12 @@ import Footer from "@/components/layout/footer";
 
 import Home from "@/pages/home";
 import Dashboard from "@/pages/dashboard";
+import About from "@/pages/about";
+import Docs from "@/pages/docs";
 import Planner from "@/pages/planner";
 import Settings from "@/pages/settings";
-import About from "@/pages/about";
-import NotFound from "@/pages/not-found";
 import IntentDetails from "@/pages/intent-details";
+import NotFound from "@/pages/not-found";
 
 // Create QueryClient instance outside component to avoid recreation
 const queryClient = new QueryClient({
@@ -34,10 +35,11 @@ export default function App() {
             <Switch>
               <Route path="/" component={Home} />
               <Route path="/dashboard" component={Dashboard} />
+              <Route path="/about" component={About} />
+              <Route path="/docs" component={Docs} />
               <Route path="/planner" component={Planner} />
               <Route path="/settings" component={Settings} />
-              <Route path="/about" component={About} />
-              <Route path="/intent/:id" component={IntentDetails} />
+              <Route path="/intents/:id" component={IntentDetails} />
               <Route component={NotFound} />
             </Switch>
           </main>

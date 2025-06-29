@@ -13,6 +13,7 @@ export default function Header() {
     { href: "/", label: "Home" },
     { href: "/dashboard", label: "Dashboard" },
     { href: "/planner", label: "Planner" },
+    { href: "/docs", label: "Docs" },
     { href: "/settings", label: "Settings" },
     { href: "/about", label: "About" },
   ];
