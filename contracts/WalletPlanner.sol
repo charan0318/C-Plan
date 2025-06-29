@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-// Uniswap V2 Router interface
 interface IUniswapV2Router02 {
     function swapExactTokensForETH(
         uint amountIn,
