@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +8,21 @@ import { useContract } from "@/hooks/use-contract";
 import { useWallet } from "@/hooks/use-wallet";
 import { formatAddress } from "@/lib/wallet";
 import { Link } from "wouter";
+
+export interface DashboardStats {
+  activePlans: number;
+  executedToday: number;
+  totalValue: string;
+  gasSaved: string;
+}
+
+export interface Intent {
+  id: number;
+  description: string;
+  estimatedCost: string;
+  timestamp: number;
+  executed: boolean;
+}
 
 export default function Dashboard() {
   const { 
@@ -23,10 +37,43 @@ export default function Dashboard() {
   const { address, isConnected } = useWallet();
 
   const [executingIntentId, setExecutingIntentId] = useState<number | null>(null);
+  const [intents, setIntents] = useState<Intent[]>([]);
+  const [nftTokens, setNftTokens] = useState<any[]>([]);
+  const [stats, setStats] = useState<DashboardStats>({
+    activePlans: 0,
+    executedToday: 0,
+    totalValue: "0",
+    gasSaved: "0"
+  });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const intentsResponse = await fetch('/api/intents');
+        const intentsData = await intentsResponse.json();
+        setIntents(intentsData);
+
+        const statsResponse = await fetch('/api/dashboard/stats');
+        const statsData = await statsResponse.json();
+        setStats(statsData);
+
+        // Fetch NFT tokens
+        const nftResponse = await fetch('/api/nfts');
+        if (nftResponse.ok) {
+          const nftData = await nftResponse.json();
+          setNftTokens(nftData);
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const handleExecuteIntent = async (intentId: number) => {
     if (!canInteract) return;
-    
+
     setExecutingIntentId(intentId);
     try {
       await executeIntent(intentId);

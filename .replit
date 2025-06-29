@@ -44,3 +44,21 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "node scripts/test.js"
+
+[[workflows.workflow]]
+name = "Test Full Workflow"
+author = 18632091
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node scripts/test-full-workflow.js"
+
+[[workflows.workflow]]
+name = "Run Automation Simulator"
+author = 18632091
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node scripts/simulate-automation.js"
