@@ -1,0 +1,74 @@
+  1) WalletPlanner
+       Intent Creation
+         Should create an intent:
+
+      AssertionError: Error in "IntentCreated" event: Error in the 1st argument assertion: expected 0 to equal 1.
+      + expected - actual
+
+      -0
+      +1
+      
+      at Context.<anonymous> (test/WalletPlanner.test.js:41:7)
+
+  2) WalletPlanner
+       Intent Management
+         Should get intent details:
+
+      AssertionError: expected '0x0000000000000000000000000000000000000000' to equal '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'.
+      + expected - actual
+
+      -0x0000000000000000000000000000000000000000
+      +0x70997970C51812dc3A010C7d01b50e0d17dc79C8
+      
+      at Context.<anonymous> (test/WalletPlanner.test.js:68:30)
+
+  3) WalletPlanner
+       Intent Management
+         Should cancel intent:
+     Error: VM Exception while processing transaction: reverted with reason string 'Not the intent owner'
+    at WalletPlanner.mintTo (@thirdweb-dev/contracts/base/ERC721Base.sol:114)
+    at WalletPlanner.cancelIntent (contracts/WalletPlanner.sol:195)
+    at EdrProviderWrapper.request (node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:359:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.cancelIntent (node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at waitForPendingTransaction (node_modules/@nomicfoundation/hardhat-chai-matchers/src/internal/emit.ts:28:17)
+    at Context.<anonymous> (test/WalletPlanner.test.js:74:7)
+  
+
+  4) WalletPlanner
+       User Intents
+         Should return correct user intents:
+
+      AssertionError: expected 0 to equal 1.
+      + expected - actual
+
+      -0
+      +1
+      
+      at Context.<anonymous> (test/WalletPlanner.test.js:104:33)
+
+  5) WalletPlanner Enhanced Tests
+       Intent Management
+         Should get intent details:
+
+      AssertionError: expected '0x0000000000000000000000000000000000000000' to equal '0x70997970C51812dc3A010C7d01b50e0d17dc79C8'.
+      + expected - actual
+
+      -0x0000000000000000000000000000000000000000
+      +0x70997970C51812dc3A010C7d01b50e0d17dc79C8
+      
+      at Context.<anonymous> (test/WalletPlannerEnhanced.test.js:110:30)
+
+  6) WalletPlanner Enhanced Tests
+       Intent Management
+         Should cancel intent:
+     Error: VM Exception while processing transaction: reverted with reason string 'Not the intent owner'
+    at WalletPlanner.mintTo (@thirdweb-dev/contracts/base/ERC721Base.sol:114)
+    at WalletPlanner.cancelIntent (contracts/WalletPlanner.sol:195)
+    at EdrProviderWrapper.request (node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:359:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.cancelIntent (node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at waitForPendingTransaction (node_modules/@nomicfoundation/hardhat-chai-matchers/src/internal/emit.ts:28:17)
+    at Context.<anonymous> (test/WalletPlannerEnhanced.test.js:115:7)
