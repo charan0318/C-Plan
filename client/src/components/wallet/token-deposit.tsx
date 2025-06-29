@@ -241,35 +241,79 @@ export function TokenDeposit() {
           </div>
 
           {selectedToken && (
-            <div className="flex space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setAmount((parseFloat(getWalletBalance(selectedToken)) * 0.25).toString())}
-              >
-                25%
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setAmount((parseFloat(getWalletBalance(selectedToken)) * 0.5).toString())}
-              >
-                50%
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setAmount((parseFloat(getWalletBalance(selectedToken)) * 0.75).toString())}
-              >
-                75%
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setAmount(getWalletBalance(selectedToken))}
-              >
-                MAX
-              </Button>
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <div className="text-xs text-gray-600 dark:text-gray-400 font-medium">For Deposits (Wallet Balance):</div>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAmount((parseFloat(getWalletBalance(selectedToken)) * 0.25).toString())}
+                  >
+                    25%
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAmount((parseFloat(getWalletBalance(selectedToken)) * 0.5).toString())}
+                  >
+                    50%
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAmount((parseFloat(getWalletBalance(selectedToken)) * 0.75).toString())}
+                  >
+                    75%
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAmount(getWalletBalance(selectedToken))}
+                  >
+                    MAX Wallet
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="text-xs text-gray-600 dark:text-gray-400 font-medium">For Withdrawals (Contract Balance):</div>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAmount((parseFloat(getDepositedBalance(selectedToken)) * 0.25).toString())}
+                    disabled={parseFloat(getDepositedBalance(selectedToken)) === 0}
+                  >
+                    25%
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAmount((parseFloat(getDepositedBalance(selectedToken)) * 0.5).toString())}
+                    disabled={parseFloat(getDepositedBalance(selectedToken)) === 0}
+                  >
+                    50%
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAmount((parseFloat(getDepositedBalance(selectedToken)) * 0.75).toString())}
+                    disabled={parseFloat(getDepositedBalance(selectedToken)) === 0}
+                  >
+                    75%
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAmount(getDepositedBalance(selectedToken))}
+                    disabled={parseFloat(getDepositedBalance(selectedToken)) === 0}
+                    className="bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-300"
+                  >
+                    MAX Contract
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -277,7 +321,7 @@ export function TokenDeposit() {
         <div className="grid grid-cols-2 gap-2">
           <Button
             onClick={handleDeposit}
-            disabled={!selectedToken || !amount || isDepositingToken || isApproving}
+            disabled={!selectedToken || !amount || isDepositingToken || isApproving || parseFloat(amount) > parseFloat(getWalletBalance(selectedToken))}
             className="w-full"
           >
             {isApproving ? (
@@ -300,7 +344,7 @@ export function TokenDeposit() {
 
           <Button
             onClick={handleWithdraw}
-            disabled={!selectedToken || !amount || isWithdrawingToken || isApproving}
+            disabled={!selectedToken || !amount || isWithdrawingToken || isApproving || parseFloat(amount) > parseFloat(getDepositedBalance(selectedToken))}
             variant="outline"
             className="w-full"
           >
