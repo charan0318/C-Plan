@@ -99,6 +99,9 @@ export function TokenBalances() {
                       <div className="text-xs text-gray-500">
                         Raw: {balance}
                       </div>
+                      <div className="text-xs text-blue-600">
+                        Float: {parseFloat(balance).toFixed(8)}
+                      </div>
                       <Badge variant="outline" className="text-xs">
                         Contract
                       </Badge>

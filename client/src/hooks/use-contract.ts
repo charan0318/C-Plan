@@ -252,21 +252,50 @@ export function useContract() {
             }
           }
 
-          // Check ETH balance in contract (from DCA swaps)
+          // Check ETH balance in contract (from DCA swaps) - try multiple approaches
           try {
+            // Method 1: Direct ETH balance check
             const ethInContract = await contract.getUserBalance(address, ethers.ZeroAddress);
             balances['ETH_DEPOSITED'] = ethers.formatEther(ethInContract);
-            console.log(`🎯 ETH in contract: ${balances['ETH_DEPOSITED']} ETH (raw: ${ethInContract.toString()})`);
+            console.log(`🎯 ETH in contract (ZeroAddress): ${balances['ETH_DEPOSITED']} ETH (raw: ${ethInContract.toString()})`);
+            
+            // Method 2: Also try with explicit ETH address if different
+            try {
+              const ethInContract2 = await contract.getUserBalance(address, "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE");
+              const ethBalance2 = ethers.formatEther(ethInContract2);
+              console.log(`🎯 ETH in contract (EeeEE...): ${ethBalance2} ETH (raw: ${ethInContract2.toString()})`);
+              
+              // Use the higher balance
+              if (parseFloat(ethBalance2) > parseFloat(balances['ETH_DEPOSITED'])) {
+                balances['ETH_DEPOSITED'] = ethBalance2;
+              }
+            } catch (e) {
+              console.log('Alternative ETH address check failed, using ZeroAddress result');
+            }
           } catch (error) {
             console.error('❌ Error fetching ETH balance in contract:', error);
             balances['ETH_DEPOSITED'] = '0';
           }
 
-          // Check WETH balance in contract separately
+          // Check WETH balance in contract - enhanced fetching
           try {
             const wethInContract = await contract.getUserBalance(address, TOKENS.WETH);
             balances['WETH_DEPOSITED'] = ethers.formatEther(wethInContract);
             console.log(`🔄 WETH in contract: ${balances['WETH_DEPOSITED']} WETH (raw: ${wethInContract.toString()})`);
+            
+            // Also check WETH token contract directly for comparison
+            try {
+              const wethTokenContract = new ethers.Contract(
+                TOKENS.WETH,
+                ['function balanceOf(address) external view returns (uint256)'],
+                walletState.provider
+              );
+              const directWethBalance = await wethTokenContract.balanceOf(address);
+              const directWethFormatted = ethers.formatEther(directWethBalance);
+              console.log(`🔄 WETH direct from token contract: ${directWethFormatted} WETH`);
+            } catch (e) {
+              console.log('Direct WETH balance check failed');
+            }
           } catch (error) {
             console.error('❌ Error fetching WETH balance in contract:', error);
             balances['WETH_DEPOSITED'] = '0';
@@ -709,6 +738,9 @@ export function useContract() {
       const decimals = tokenIn === 'USDC' ? 6 : 18;
       const amountWei = ethers.parseUnits(amountIn, decimals);
 
+      console.log(`🔄 Executing swap: ${amountIn} ${tokenIn} → ${tokenOut}`);
+      console.log(`Token addresses: ${tokenInAddress} → ${tokenOutAddress}`);
+
       const tx = await contract.executeSwap(
         tokenInAddress,
         amountWei,
@@ -717,17 +749,43 @@ export function useContract() {
         slippage
       );
 
+      console.log(`✅ Swap transaction sent: ${tx.hash}`);
+
       // Return transaction for real-time tracking
-      return { tx, hash: tx.hash };
+      return { tx, hash: tx.hash, tokenOut, amountIn, tokenIn };
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
+      console.log(`🎉 Swap transaction successful, refreshing balances...`);
+      
+      // Aggressive balance refresh strategy
       queryClient.invalidateQueries({ queryKey: ['token-balances'] });
+      
+      // Multiple refreshes with delays to catch blockchain state updates
+      setTimeout(() => {
+        console.log('First delayed balance refresh');
+        queryClient.invalidateQueries({ queryKey: ['token-balances'] });
+        refetchBalances();
+      }, 2000);
+      
+      setTimeout(() => {
+        console.log('Second delayed balance refresh');
+        queryClient.invalidateQueries({ queryKey: ['token-balances'] });
+        refetchBalances();
+      }, 5000);
+      
+      setTimeout(() => {
+        console.log('Third delayed balance refresh');
+        queryClient.invalidateQueries({ queryKey: ['token-balances'] });
+        refetchBalances();
+      }, 10000);
+
       toast({
-        title: "Swap Initiated",
-        description: `Transaction hash: ${data.hash.slice(0, 10)}...`,
+        title: "Swap Successful! 🎉",
+        description: `${data.amountIn} ${data.tokenIn} → ${data.tokenOut}. Check contract balances!`,
       });
     },
     onError: (error: any) => {
+      console.error('Swap execution failed:', error);
       toast({
         title: "Swap Failed",
         description: error.message || "Failed to execute swap",
