@@ -407,10 +407,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await storage.updateIntent(intentId, updateData);
 
+      // Mock NFT minting
+      const nftToken = {
+        tokenId: Math.floor(Math.random() * 10000) + 1,
+        name: `C-PLAN Execution #${Math.floor(Math.random() * 10000) + 1}`,
+        description: `NFT awarded for executing: ${intent.action} ${intent.amount} ${intent.token}`,
+        image: `https://api.dicebear.com/7.x/shapes/svg?seed=${intent.id}`,
+        attributes: [
+          { trait_type: "Action", value: intent.action },
+          { trait_type: "Token", value: intent.token },
+          { trait_type: "Amount", value: intent.amount || "N/A" },
+          { trait_type: "Execution Date", value: new Date().toISOString().split('T')[0] }
+        ]
+      };
+
       res.json({
         executed: true,
         result: executionResult,
-        nftMinted: nftToken
+        nftMinted: nftToken,
+        message: `🎉 Automation executed successfully! You earned NFT #${nftToken.tokenId} as a reward.`
       });
 
     } catch (error) {

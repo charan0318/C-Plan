@@ -8,6 +8,7 @@ import { PlusCircle, Play, CheckCircle, Wallet, Trophy, Clock } from "lucide-rea
 import { useWallet } from "@/hooks/use-wallet";
 import { formatAddress } from "@/lib/wallet";
 import { Link } from "wouter";
+import { useToast } from "@/hooks/use-toast";
 
 export interface DashboardStats {
   activePlans: number;
@@ -55,6 +56,7 @@ export default function Dashboard() {
   
   const walletState = useWallet();
   const { address, isConnected } = walletState;
+  const { toast } = useToast();
 
   const [executingIntentId, setExecutingIntentId] = useState<number | null>(null);
   
@@ -82,9 +84,29 @@ export default function Dashboard() {
       if (!response.ok) throw new Error("Failed to execute intent");
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/intents"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      
+      // Show success message with NFT info
+      if (data.nftMinted) {
+        toast({
+          title: "Intent Executed Successfully! 🎉",
+          description: `Your automation completed and you earned NFT #${data.nftMinted.tokenId}`,
+        });
+      } else {
+        toast({
+          title: "Intent Executed Successfully!",
+          description: "Your automation plan has been completed.",
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Execution Failed",
+        description: error.message || "Failed to execute intent",
+        variant: "destructive",
+      });
     }
   });
 

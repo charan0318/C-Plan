@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useWallet } from "@/hooks/use-wallet";
 import { useToast } from "@/hooks/use-toast";
-import { Wallet, Loader2, AlertCircle, CheckCircle, LogOut } from "lucide-react";
+import { Wallet, Loader2, AlertCircle, CheckCircle, Power } from "lucide-react";
 
 export function WalletConnect() {
   const walletState = useWallet();
@@ -84,7 +84,7 @@ export function WalletConnect() {
           size="sm"
           className="text-red-600 hover:text-red-700 hover:bg-red-50"
         >
-          <LogOut size={16} className="mr-1" />
+          <Power size={16} className="mr-1" />
           Disconnect
         </Button>
       </div>
