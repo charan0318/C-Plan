@@ -74,47 +74,7 @@ export class MemStorage implements IStorage {
     };
     this.walletConnections.set(1, mockWallet);
 
-    // Create mock intents
-    const mockIntent1: Intent = {
-      id: 1,
-      userId: 1,
-      walletAddress: "0x742d35Cc6639Cf532793a3f8a",
-      title: "Weekly USDC Staking",
-      description: "Stake 100 USDC when gas is below 20 gwei",
-      action: "STAKE",
-      token: "USDC",
-      amount: "100",
-      frequency: "WEEKLY",
-      conditions: { gasPrice: { max: 20 } },
-      targetChain: "ethereum-sepolia",
-      isActive: true,
-      nextExecution: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      lastExecution: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
 
-    const mockIntent2: Intent = {
-      id: 2,
-      userId: 1,
-      walletAddress: "0x742d35Cc6639Cf532793a3f8a",
-      title: "Monthly DAI Transfer",
-      description: "Send 50 DAI to savings wallet",
-      action: "SEND",
-      token: "DAI",
-      amount: "50",
-      frequency: "MONTHLY",
-      conditions: {},
-      targetChain: "ethereum-sepolia",
-      isActive: true,
-      nextExecution: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      lastExecution: null,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-
-    this.intents.set(1, mockIntent1);
-    this.intents.set(2, mockIntent2);
 
     // Create mock execution history
     const mockExecution: ExecutionHistory = {
