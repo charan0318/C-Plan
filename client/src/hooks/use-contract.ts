@@ -129,7 +129,7 @@ export function useContract() {
   });
 
   return {
-    isLoading: isLoading || isLoadingIntents || isTransactionPending,
+    isLoading: isLoadingIntents || isTransactionPending,
     userIntents,
     nftBalance,
     createIntent,
