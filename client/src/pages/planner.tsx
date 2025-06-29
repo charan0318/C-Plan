@@ -22,6 +22,24 @@ export default function Planner() {
   const [isCreating, setIsCreating] = useState(false);
 
   const handleCreateIntent = async () => {
+    if (!isConnected || !address) {
+      toast({
+        title: "Wallet Not Connected",
+        description: "Please connect your wallet first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!isContractDeployed) {
+      toast({
+        title: "Contract Not Available",
+        description: "Smart contract is not deployed or accessible",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!description.trim()) {
       toast({
         title: "Description Required",
@@ -31,10 +49,10 @@ export default function Planner() {
       return;
     }
 
-    if (!estimatedCost || isNaN(Number(estimatedCost)) || Number(estimatedCost) < 0) {
+    if (!estimatedCost || isNaN(Number(estimatedCost)) || Number(estimatedCost) <= 0) {
       toast({
         title: "Invalid Cost",
-        description: "Please enter a valid estimated cost",
+        description: "Please enter a valid estimated cost greater than 0",
         variant: "destructive",
       });
       return;
@@ -198,7 +216,7 @@ export default function Planner() {
                 </Link>
                 <Button
                   onClick={handleCreateIntent}
-                  disabled={!isContractDeployed || isTransactionPending || isCreating}
+                  disabled={!isConnected || !isContractDeployed || isTransactionPending || isCreating || !description.trim() || !estimatedCost}
                   className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                 >
                   {isCreating ? (

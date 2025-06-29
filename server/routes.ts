@@ -108,6 +108,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new intent with smart contract integration
   app.post("/api/intents", async (req, res) => {
     try {
+      if (!req.body) {
+        return res.status(400).json({ 
+          error: "Request body is required",
+          message: "Please provide intent data" 
+        });
+      }
+
       const { userId, walletAddress, title, description, action, token, amount, frequency, conditions, targetChain, elizaParsed } = req.body;
 
       // Prepare smart contract parameters
@@ -183,9 +190,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }, 2000); // 2 second delay to simulate blockchain processing
 
       res.json(newIntent);
-    } catch (error) {
-      console.error('Intent creation error:', error);
-      res.status(500).json({ error: 'Failed to create intent' });
+    } catch (error: any) {
+      console.error("Intent creation error:", error);
+      res.status(500).json({ 
+        error: error.message || "Internal server error",
+        message: "Failed to create intent"
+      });
     }
   });
 

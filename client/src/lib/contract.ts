@@ -17,8 +17,15 @@ export const CONTRACT_CONFIG = {
 };
 
 export function getContract(provider: ethers.Provider, signer?: ethers.Signer) {
-  if (!CONTRACT_CONFIG.address || CONTRACT_CONFIG.address === "0x0000000000000000000000000000000000000000") {
+  if (!CONTRACT_CONFIG.address || 
+      CONTRACT_CONFIG.address === "0x0000000000000000000000000000000000000000" ||
+      CONTRACT_CONFIG.address.length !== 42 ||
+      !CONTRACT_CONFIG.address.startsWith("0x")) {
     throw new Error("Contract not deployed yet. Please deploy the contract first.");
+  }
+
+  if (!provider) {
+    throw new Error("Provider is required to create contract instance");
   }
 
   return new ethers.Contract(

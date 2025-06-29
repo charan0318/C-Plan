@@ -71,6 +71,10 @@ export function useWallet() {
   });
 
   const connectWallet = async () => {
+    if (walletState.isConnecting) {
+      return; // Prevent multiple simultaneous connection attempts
+    }
+
     setWalletState(prev => ({ ...prev, isConnecting: true }));
     
     try {
@@ -145,8 +149,17 @@ export function useWallet() {
         provider,
         signer: finalSigner
       });
-    } catch (error) {
-      setWalletState(prev => ({ ...prev, isConnecting: false }));
+    } catch (error: any) {
+      console.error("Wallet connection error:", error);
+      setWalletState(prev => ({ 
+        ...prev, 
+        isConnecting: false,
+        isConnected: false,
+        address: undefined,
+        chainId: undefined,
+        provider: undefined,
+        signer: undefined
+      }));
       throw error;
     }
   };

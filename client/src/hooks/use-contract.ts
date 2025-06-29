@@ -29,22 +29,36 @@ export function useContract() {
         throw new Error("Wallet not connected");
       }
 
-      // Create intent via API
-      const response = await apiRequest("POST", "/api/intents", {
-        userId: 1, // Mock user ID
-        walletAddress: address,
-        title: description.substring(0, 50) + (description.length > 50 ? "..." : ""),
-        description,
-        action: "GENERAL",
-        token: "ETH",
-        amount: estimatedCost,
-        frequency: "ONCE",
-        conditions: {},
-        targetChain: "ethereum-sepolia",
-        elizaParsed: null
-      });
+      if (!isContractDeployed) {
+        throw new Error("Smart contract not deployed");
+      }
 
-      return response.json();
+      try {
+        // Create intent via API
+        const response = await apiRequest("POST", "/api/intents", {
+          userId: 1, // Mock user ID
+          walletAddress: address,
+          title: description.substring(0, 50) + (description.length > 50 ? "..." : ""),
+          description,
+          action: "GENERAL",
+          token: "ETH",
+          amount: estimatedCost,
+          frequency: "ONCE",
+          conditions: {},
+          targetChain: "ethereum-sepolia",
+          elizaParsed: null
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
+          throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        return response.json();
+      } catch (error: any) {
+        console.error("API request failed:", error);
+        throw new Error(error.message || "Failed to create intent");
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/intents"] });
@@ -129,7 +143,10 @@ export function useContract() {
     enabled: isConnected && !!address && !!walletState.provider && CONTRACT_CONFIG.address !== "0x0000000000000000000000000000000000000000"
   });
 
-  const isContractDeployed = CONTRACT_CONFIG.address !== "0x0000000000000000000000000000000000000000";
+  const isContractDeployed = CONTRACT_CONFIG.address && 
+    CONTRACT_CONFIG.address !== "0x0000000000000000000000000000000000000000" &&
+    CONTRACT_CONFIG.address.length === 42 &&
+    CONTRACT_CONFIG.address.startsWith("0x");
   
   // Debug logging
   if (typeof window !== 'undefined') {
@@ -137,7 +154,9 @@ export function useContract() {
       address: CONTRACT_CONFIG.address,
       isContractDeployed,
       isConnected,
-      hasProvider: !!walletState.provider
+      hasProvider: !!walletState.provider,
+      hasWallet: !!address,
+      chainId: walletState.chainId
     });
   }
 

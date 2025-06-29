@@ -8,6 +8,12 @@ import { Wallet, Loader2, AlertCircle, CheckCircle, LogOut } from "lucide-react"
 export function WalletConnect() {
   const walletState = useWallet();
   const { toast } = useToast();
+  
+  // Add error boundary check
+  if (!walletState) {
+    console.error("WalletConnect: walletState is undefined");
+    return null;
+  }
 
   const { 
     isConnected, 
