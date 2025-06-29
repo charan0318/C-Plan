@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,11 +46,11 @@ export default function Planner() {
         description: description.trim(),
         estimatedCost: estimatedCost
       });
-      
+
       // Reset form
       setDescription("");
       setEstimatedCost("");
-      
+
       toast({
         title: "Intent Created",
         description: "Your intent has been created and stored on-chain!",
@@ -167,12 +166,13 @@ export default function Planner() {
                 type="number"
                 step="0.001"
                 min="0"
-                placeholder="0.01"
                 value={estimatedCost}
                 onChange={(e) => setEstimatedCost(e.target.value)}
+                placeholder="0.01"
+                className="bg-white dark:bg-gray-800"
               />
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                Estimated gas and execution costs in ETH
+              <p className="text-sm text-gray-500">
+                Estimated gas and execution costs in ETH (e.g., 0.01 for $30-40)
               </p>
             </div>
 
@@ -189,7 +189,7 @@ export default function Planner() {
                   On-Chain
                 </Badge>
               </div>
-              
+
               <div className="flex gap-2">
                 <Link href="/dashboard">
                   <Button variant="outline">
