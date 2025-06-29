@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useWallet } from "@/hooks/use-wallet";
 import { useToast } from "@/hooks/use-toast";
-import { Wallet, Loader2, AlertCircle, CheckCircle } from "lucide-react";
+import { Wallet, Loader2, AlertCircle, CheckCircle, LogOut } from "lucide-react";
 
 export function WalletConnect() {
   const walletState = useWallet();
