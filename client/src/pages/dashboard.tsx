@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PlusCircle, Play, CheckCircle, Wallet, Trophy, Clock } from "lucide-react";
-import { useContract } from "@/hooks/use-contract";
 import { useWallet } from "@/hooks/use-wallet";
 import { formatAddress } from "@/lib/wallet";
 import { Link } from "wouter";
@@ -25,61 +25,60 @@ export interface Intent {
 }
 
 export default function Dashboard() {
-  const contractState = useContract();
-  const { 
-    userIntents, 
-    nftBalance, 
-    isLoadingIntents, 
-    isLoadingBalance,
-    executeIntent,
-    isTransactionPending,
-    canInteract 
-  } = contractState;
+  const { data: userIntents = [], isLoading: isLoadingIntents } = useQuery({
+    queryKey: ["/api/intents"],
+    queryFn: async () => {
+      const response = await fetch("/api/intents");
+      if (!response.ok) throw new Error("Failed to fetch intents");
+      return response.json();
+    }
+  });
+
+  const { data: nftBalance = 0, isLoading: isLoadingBalance } = useQuery({
+    queryKey: ["/api/nfts"],
+    queryFn: async () => {
+      const response = await fetch("/api/nfts");
+      if (!response.ok) return 0;
+      const data = await response.json();
+      return data.length || 0;
+    }
+  });
   
   const walletState = useWallet();
   const { address, isConnected } = walletState;
 
   const [executingIntentId, setExecutingIntentId] = useState<number | null>(null);
-  const [intents, setIntents] = useState<Intent[]>([]);
-  const [nftTokens, setNftTokens] = useState<any[]>([]);
-  const [stats, setStats] = useState<DashboardStats>({
-    activePlans: 0,
-    executedToday: 0,
-    totalValue: "0",
-    gasSaved: "0"
+  
+  const { data: stats } = useQuery({
+    queryKey: ["/api/dashboard/stats"],
+    queryFn: async () => {
+      const response = await fetch("/api/dashboard/stats");
+      if (!response.ok) throw new Error("Failed to fetch stats");
+      return response.json();
+    }
   });
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const intentsResponse = await fetch('/api/intents');
-        const intentsData = await intentsResponse.json();
-        setIntents(intentsData);
+  const queryClient = useQueryClient();
 
-        const statsResponse = await fetch('/api/dashboard/stats');
-        const statsData = await statsResponse.json();
-        setStats(statsData);
-
-        // Fetch NFT tokens
-        const nftResponse = await fetch('/api/nfts');
-        if (nftResponse.ok) {
-          const nftData = await nftResponse.json();
-          setNftTokens(nftData);
-        }
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-      }
-    };
-
-    fetchData();
-  }, []);
+  const executeIntentMutation = useMutation({
+    mutationFn: async (intentId: number) => {
+      const response = await fetch(`/api/intents/${intentId}/execute`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+      });
+      if (!response.ok) throw new Error("Failed to execute intent");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/intents"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+    }
+  });
 
   const handleExecuteIntent = async (intentId: number) => {
-    if (!canInteract) return;
-
     setExecutingIntentId(intentId);
     try {
-      await executeIntent(intentId);
+      await executeIntentMutation.mutateAsync(intentId);
     } catch (error) {
       console.error("Failed to execute intent:", error);
     } finally {
@@ -105,8 +104,8 @@ export default function Dashboard() {
     );
   }
 
-  const executedIntents = userIntents.filter(intent => intent.executed);
-  const activeIntents = userIntents.filter(intent => !intent.executed);
+  const activeIntents = userIntents.filter(intent => intent.isActive);
+  const inactiveIntents = userIntents.filter(intent => !intent.isActive);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
@@ -142,19 +141,19 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {isLoadingIntents ? "..." : activeIntents.length}
+                {isLoadingIntents ? "..." : userIntents.filter(intent => intent.isActive).length}
               </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Executed Intents</CardTitle>
+              <CardTitle className="text-sm font-medium">Executed Today</CardTitle>
               <CheckCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {isLoadingIntents ? "..." : executedIntents.length}
+                {stats ? stats.executedToday : "..."}
               </div>
             </CardContent>
           </Card>
@@ -235,7 +234,7 @@ export default function Dashboard() {
                         </div>
                         <Button
                           onClick={() => handleExecuteIntent(intent.id)}
-                          disabled={!canInteract || isTransactionPending || executingIntentId === intent.id}
+                          disabled={executingIntentId === intent.id || executeIntentMutation.isPending}
                           size="sm"
                         >
                           {executingIntentId === intent.id ? (
@@ -259,7 +258,7 @@ export default function Dashboard() {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
                 <p className="mt-2 text-gray-600 dark:text-gray-400">Loading intents...</p>
               </div>
-            ) : executedIntents.length === 0 ? (
+            ) : inactiveIntents.length === 0 ? (
               <Card>
                 <CardContent className="pt-6">
                   <div className="text-center py-8">
@@ -275,7 +274,7 @@ export default function Dashboard() {
               </Card>
             ) : (
               <div className="grid gap-4">
-                {executedIntents.map((intent) => (
+                {inactiveIntents.map((intent) => (
                   <Card key={intent.id}>
                     <CardHeader>
                       <div className="flex items-start justify-between">
