@@ -238,12 +238,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               throw new Error(`Insufficient USDC balance. Need ${dollarAmount} USDC but only have ${ethers.formatUnits(userUsdcBalance, 6)} USDC in contract`);
             }
 
-            // Execute the swap: USDC → WETH
+            // Execute the swap: USDC → WETH (keep earned WETH in contract)
             const tx = await contract.executeSwap(
               USDC_ADDRESS,    // tokenIn (USDC)
               usdcAmount,      // amountIn (USDC amount with 6 decimals)
               WETH_ADDRESS,    // tokenOut (WETH)
-              signer.address,  // recipient
+              contractAddress, // recipient (keep earned WETH in contract!)
               300              // 3% slippage tolerance
             );
 
