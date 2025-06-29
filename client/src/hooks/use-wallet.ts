@@ -56,6 +56,10 @@ export function useWallet() {
         const signer = await provider.getSigner();
         const address = await signer.getAddress();
         const network = await provider.getNetwork();
+        const chainId = Number(network.chainId);
+
+        // Check if we're on Sepolia testnet
+        const network = await provider.getNetwork();
         const currentChainId = Number(network.chainId);
         
         if (currentChainId !== 11155111) {

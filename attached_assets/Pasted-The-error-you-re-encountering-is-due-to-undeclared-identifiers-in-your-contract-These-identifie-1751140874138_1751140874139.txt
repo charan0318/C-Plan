@@ -1,0 +1,151 @@
+The error you're encountering is due to **undeclared identifiers** in your contract. These identifiers likely refer to methods or variables that are part of a parent contract or an imported library but aren't properly referenced.
+
+Let's break down the errors:
+
+### 1. **`_setupRole` Undeclared Identifier:**
+
+```solidity
+_setupRole(keccak256("MINTER_ROLE"), address(this));
+```
+
+This function is part of OpenZeppelin's `AccessControl` contract, which provides role-based access control functionality.
+
+### Possible Fix:
+
+You need to **import the `AccessControl` contract** from OpenZeppelin and **inherit it** in your `WalletPlanner` contract.
+
+#### Steps to Fix:
+
+* First, make sure you have the correct OpenZeppelin packages installed:
+
+```bash
+npm install @openzeppelin/contracts
+```
+
+* Then, in your `WalletPlanner.sol` contract, **import `AccessControl`** and inherit it.
+
+Here’s how you can do it:
+
+```solidity
+// Import AccessControl from OpenZeppelin
+import "@openzeppelin/contracts/access/AccessControl.sol";
+
+contract WalletPlanner is AccessControl {
+    // Contract code here
+
+    constructor() {
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender); // Set the deployer as the admin role
+        _setupRole(keccak256("MINTER_ROLE"), address(this)); // Set the contract as the minter
+    }
+
+    // Other methods and logic
+}
+```
+
+### 2. **`_mintTo` Undeclared Identifier:**
+
+```solidity
+_mintTo(msg.sender, "");
+```
+
+The `_mintTo` function does not exist in OpenZeppelin's `ERC721` implementation, but `_mint` does. It seems like the code might be using `_mintTo`, which is not part of the standard OpenZeppelin contracts.
+
+### Possible Fix:
+
+* If you want to mint an NFT, you should use the `_mint` function, which is part of OpenZeppelin’s `ERC721` contract. Here’s how to do it:
+
+1. Make sure you're **importing the `ERC721` contract** from OpenZeppelin:
+
+```solidity
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+```
+
+2. Inherit the `ERC721` contract in your `WalletPlanner` contract:
+
+```solidity
+contract WalletPlanner is ERC721, AccessControl {
+    uint256 public nextTokenId;
+    // Other contract variables
+
+    constructor() ERC721("WalletPlannerNFT", "WPNFT") {
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender); // Set the deployer as admin
+        _setupRole(keccak256("MINTER_ROLE"), address(this)); // Set contract as minter
+    }
+
+    function mintTo(address to) internal {
+        _mint(to, nextTokenId); // Mint the NFT to the `to` address
+        nextTokenId++;
+    }
+
+    // Other methods
+}
+```
+
+This should fix the error regarding the minting logic. The `_mint` function will mint the NFT to the address specified, and you'll manage the token IDs using `nextTokenId`.
+
+---
+
+### **Full Example of Updated Contract:**
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.21;
+
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+
+contract WalletPlanner is ERC721, AccessControl {
+    uint256 public nextTokenId;
+    mapping(uint256 => WalletIntent) public intents;
+    
+    struct WalletIntent {
+        address owner;
+        string description;
+        uint256 estimatedCost;
+        bool executed;
+    }
+
+    constructor() ERC721("WalletPlannerNFT", "WPNFT") {
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender); // Admin role
+        _setupRole(keccak256("MINTER_ROLE"), address(this)); // Contract as minter
+    }
+
+    function saveIntent(string memory description, uint256 estimatedCost) public {
+        uint256 intentId = uint256(keccak256(abi.encodePacked(msg.sender, block.timestamp)));
+        intents[intentId] = WalletIntent(msg.sender, description, estimatedCost, false);
+    }
+
+    function executeIntent(uint256 intentId) public {
+        WalletIntent storage intent = intents[intentId];
+        require(intent.owner == msg.sender, "Not the owner");
+        require(!intent.executed, "Already executed");
+
+        intent.executed = true;
+        mintTo(msg.sender); // Mint NFT when intent is executed
+    }
+
+    function mintTo(address to) internal {
+        _mint(to, nextTokenId); // Mint NFT to the specified address
+        nextTokenId++; // Increment the token ID for the next mint
+    }
+
+    function hasRole(bytes32 role, address account) public view override returns (bool) {
+        return super.hasRole(role, account);
+    }
+}
+```
+
+### Key Points:
+
+1. **AccessControl:** Now inherits from `AccessControl` to handle roles like `MINTER_ROLE`.
+2. **ERC721:** Now inherits from `ERC721` to handle NFT minting, using the `_mint` method.
+3. **Minting:** I've added a `_mintTo` method that calls the internal `_mint` method of `ERC721` to mint the NFT. It tracks the `nextTokenId` to ensure each NFT gets a unique ID.
+
+### After these fixes:
+
+1. Recompile your contract with `npx hardhat compile`.
+2. Rerun your tests with `npx hardhat test`.
+
+Once all tests pass, you can proceed to deploy your contract to the testnet (Sepolia or Mumbai) using the `npx hardhat run` command from the previous steps.
+
+Let me know if you encounter any more issues!

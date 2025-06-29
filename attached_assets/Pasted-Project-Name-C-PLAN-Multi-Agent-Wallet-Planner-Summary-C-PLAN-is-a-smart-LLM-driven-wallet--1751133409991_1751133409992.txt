@@ -1,0 +1,168 @@
+Project Name: C-PLAN – Multi-Agent Wallet Planner
+
+🎯 Summary
+
+C-PLAN is a smart, LLM-driven wallet automation tool powered by ElizaOS agents, Chainlink Functions, and Chainlink Automation. Users express wallet goals in natural language, which are parsed by agents, stored on-chain, and managed via decentralized infrastructure.
+
+🔧 Modules & Functionalities (Grouped by Screens)
+
+1️⃣ Home / Welcome
+
+Purpose: Introduce the product, explain value prop, and lead users to start planning.
+
+Features:
+
+App branding, tagline, and hero section
+
+"Start Planning" CTA button
+
+Wallet connect (Wagmi)
+
+Footer with GitHub, Chainlink, ElizaOS, Hackathon info
+
+2️⃣ Planner Chat (ElizaOS Agent Interface)
+
+Purpose: Allow users to express wallet goals in natural language and interact with an ElizaOS agent.
+
+Features:
+
+Chat input with real-time agent interaction
+
+Parsed goal summary display
+
+Example prompts carousel
+
+Confirm & Continue button (on agent output)
+
+Retry/edit functionality
+
+Backend:
+
+Agent uses prompt logic to parse action, token, frequency, conditions, and target chain
+
+Passes structured JSON forward
+
+3️⃣ Intent Confirmation Modal
+
+Purpose: Display agent-parsed task in a structured format and allow user to save it to blockchain.
+
+Features:
+
+Clean UI summary of the task (stake/send/remind, frequency, token, etc.)
+
+Target chain selector
+
+Contract write trigger button: “Confirm & Save to Planner”
+
+Transaction progress modal + confirmation state
+
+Smart Contract Integration:
+
+Calls saveIntent() function on WalletPlanner.sol
+
+Triggers Chainlink Automation registration for follow-ups
+
+4️⃣ Dashboard (Active Plans View)
+
+Purpose: Show an overview of active intents/goals with execution status.
+
+Features:
+
+List of active plans (card layout or table)
+
+Plan summary: Token, action, frequency, next run, last result
+
+Status indicators (conditions met, failed, pending)
+
+Plan controls: Pause, Delete, View Details
+
+Refresh/Sync latest status
+
+Smart Contract Integration:
+
+Read getUserIntents() and display plan metadata
+
+Pull state + Chainlink output via off-chain indexer or view functions
+
+5️⃣ Intent Details Page
+
+Purpose: Provide in-depth view of a single wallet automation task.
+
+Features:
+
+Structured display of parsed goal (from ElizaOS)
+
+Live condition evaluation (gas, balance) via Chainlink Functions
+
+Execution history with timestamps + results
+
+Task actions (Pause, Delete)
+
+Optional: Raw input JSON, Function logs
+
+Backend/On-chain:
+
+getIntent(), getExecutionHistory()
+
+Uses Functions for live evaluation (gas price API, balance check, etc.)
+
+6️⃣ Settings Page
+
+Purpose: Manage wallet connection, supported chains, dev/testnet modes.
+
+Features:
+
+Wagmi wallet connector UI
+
+Supported networks dropdown
+
+Contract address and Chainlink job metadata
+
+Dev mode toggle (mock data, raw logs)
+
+Backend:
+
+Dynamic contract + Chainlink config loading per chain
+
+7️⃣ About / Footer Page
+
+Purpose: Show project context, source code, credits, and hackathon track.
+
+Features:
+
+Short project description + tagline
+
+Chainlink services used (with links)
+
+GitHub repo link
+
+Docs: Chainlink, ElizaOS, Hackathon site
+
+Developer credits (optional)
+
+Footer or full-screen variant
+
+🔗 Chainlink Services Used
+
+Chainlink Functions: External API fetching (gas prices, balances)
+
+Chainlink Automation: Scheduled execution of checkCondition() per intent
+
+ElizaOS Agents: Converts natural language to structured contract input
+
+📌 Notes
+
+All state changes are made on-chain using validated Chainlink inputs, qualifying the project for Chainlink Core Prizes.
+
+Entire app is chain-agnostic with support for major EVM testnets.
+
+✅ Next Steps
+
+Scaffold smart contract & frontend repo
+
+Build agent pipeline for Planner Chat
+
+Connect save flow to Chainlink + contract
+
+Begin screen-by-screen development
+

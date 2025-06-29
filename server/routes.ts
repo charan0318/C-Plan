@@ -3,7 +3,6 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertIntentSchema, insertChatMessageSchema } from "@shared/schema";
 import { elizaService } from "./elizaService";
-import { pushNotificationService } from "./pushNotificationService";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get user's wallet connections
@@ -111,13 +110,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!storage.intents) storage.intents = [];
       storage.intents.push(newIntent);
 
-      // Send Push notification for intent creation
-      await pushNotificationService.notifyIntentCreated(
-        walletAddress,
-        title,
-        newIntent.id
-      );
-
       // Simulate blockchain interaction (in production, use actual contract calls)
       setTimeout(async () => {
         try {
@@ -176,20 +168,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/intents/:id", async (req, res) => {
     try {
       const intentId = parseInt(req.params.id);
-      const intent = storage.intents?.find(i => i.id === intentId);
       const deleted = await storage.deleteIntent(intentId);
 
       if (!deleted) {
         return res.status(404).json({ error: "Intent not found" });
-      }
-
-      // Send Push notification for intent cancellation
-      if (intent) {
-        await pushNotificationService.notifyIntentExpired(
-          intent.walletAddress,
-          intent.title,
-          "Intent cancelled by user"
-        );
       }
 
       res.json({ success: true });
@@ -284,15 +266,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const shouldExecute = checkExecutionConditions(intent);
 
       if (!shouldExecute.canExecute) {
-        // Notify user about condition not being met
-        if (shouldExecute.reason.includes('Gas price') || shouldExecute.reason.includes('Balance')) {
-          await pushNotificationService.notifyConditionMet(
-            intent.walletAddress,
-            intent.title,
-            shouldExecute.reason
-          );
-        }
-        
         return res.json({ 
           executed: false, 
           reason: shouldExecute.reason,
@@ -314,14 +287,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Add to execution history
       if (!storage.executionHistory) storage.executionHistory = [];
       storage.executionHistory.push(executionResult);
-
-      // Send Push notification for intent execution
-      await pushNotificationService.notifyIntentExecuted(
-        intent.walletAddress,
-        intent.title,
-        executionResult.result,
-        executionResult.transactionHash
-      );
 
       // Update intent last execution
       const intentIndex = storage.intents.findIndex(i => i.id === intentId);
@@ -345,13 +310,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!storage.nftTokens) storage.nftTokens = [];
       storage.nftTokens.push(nftToken);
-
-      // Send Push notification for NFT minting
-      await pushNotificationService.notifyNFTMinted(
-        intent.walletAddress,
-        nftToken.tokenId,
-        intent.title
-      );
 
       res.json({
         executed: true,
