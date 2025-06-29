@@ -215,7 +215,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const contractABI = [
               "function executeSwap(address tokenIn, uint256 amountIn, address tokenOut, address recipient, uint256 slippageTolerance) external returns (uint256)",
               "function getUserBalance(address user, address token) external view returns (uint256)",
-              "function depositToken(address token, uint256 amount) external"
+              "function depositToken(address token, uint256 amount) external",
+              "function getSwapEstimate(address tokenIn, uint256 amountIn, address tokenOut) external view returns (uint256)"
             ];
 
             const contract = new ethers.Contract(contractAddress, contractABI, signer);
@@ -230,28 +231,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`🚀 Executing DCA swap: ${dollarAmount} USDC → ETH`);
             console.log(`USDC amount (with 6 decimals): ${usdcAmount.toString()}`);
 
-            // Ensure tokens are supported (try to add them if not)
-            try {
-              console.log("Ensuring tokens are supported in contract...");
-              const usdcSupported = await contract.supportedTokens(USDC_ADDRESS);
-              const wethSupported = await contract.supportedTokens(WETH_ADDRESS);
-              
-              if (!usdcSupported) {
-                console.log("Adding USDC as supported token...");
-                const addUsdcTx = await contract.addSupportedToken(USDC_ADDRESS);
-                await addUsdcTx.wait();
-                console.log("USDC added as supported token");
-              }
-              
-              if (!wethSupported) {
-                console.log("Adding WETH as supported token...");
-                const addWethTx = await contract.addSupportedToken(WETH_ADDRESS);
-                await addWethTx.wait();
-                console.log("WETH added as supported token");
-              }
-            } catch (supportError) {
-              console.log("Note: Could not add supported tokens (may not be contract owner):", supportError.message);
-            }
+            console.log("Contract loaded, proceeding with swap execution...");
 
             // Check user's USDC balance in contract
             const userUsdcBalance = await contract.getUserBalance(signer.address, USDC_ADDRESS);
@@ -261,15 +241,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               throw new Error(`Insufficient USDC balance. Need ${dollarAmount} USDC but only have ${ethers.formatUnits(userUsdcBalance, 6)} USDC in contract`);
             }
 
-            // Check if tokens are supported in contract first
-            console.log("Checking if tokens are supported...");
-            const usdcSupported = await contract.supportedTokens(USDC_ADDRESS);
-            const wethSupported = await contract.supportedTokens(WETH_ADDRESS);
-            console.log(`USDC supported: ${usdcSupported}, WETH supported: ${wethSupported}`);
-
-            if (!usdcSupported || !wethSupported) {
-              throw new Error(`Tokens not supported in contract. USDC: ${usdcSupported}, WETH: ${wethSupported}`);
-            }
+            console.log("Proceeding with on-chain swap execution...");
 
             // Try to get swap estimate first to see if the swap is feasible
             console.log("Getting swap estimate...");
