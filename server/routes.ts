@@ -4,6 +4,23 @@ import { storage } from "./storage";
 import { insertIntentSchema, insertChatMessageSchema } from "@shared/schema";
 import { elizaService } from "./elizaService";
 
+let mockConnections: any[] = []; // Define mockConnections outside the route handlers to persist between requests
+
+const addWalletConnection = ({ userId, walletAddress, chainId }) => {
+  const connection = {
+    id: Date.now(),
+    userId,
+    walletAddress,
+    chainId,
+    isActive: true,
+    createdAt: new Date()
+  };
+
+  mockConnections = mockConnections.filter(conn => conn.userId === userId && conn.walletAddress !== walletAddress); // Update existing connections
+  mockConnections.push(connection);
+  return connection;
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get user's wallet connections
   app.get("/api/wallet/connections", async (req, res) => {
@@ -22,28 +39,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { walletAddress, chainId } = req.body;
 
       if (!walletAddress || !chainId) {
-        return res.status(400).json({ error: "Missing required fields" });
+        return res.status(400).json({ error: "Missing walletAddress or chainId" });
       }
 
-      // For now, create a simple connection record
-      const connection = {
-        id: Date.now(),
-        userId: 1, // Mock user ID
+      // Validate Sepolia testnet
+      if (chainId !== 11155111) {
+        return res.status(400).json({ error: "Must be on Sepolia testnet (chainId: 11155111)" });
+      }
+
+      // Store connection (or update if exists)
+      const connection = addWalletConnection({
+        userId: 1, // For demo purposes
         walletAddress,
-        chainId,
-        isActive: true,
-        createdAt: new Date()
-      };
-
-      // Store in memory (in production, use a database)
-      let mockConnections: any[] = []; // define mockConnections
-
-      mockConnections = mockConnections.filter(conn => conn.userId === 1);
-      mockConnections.push(connection);
+        chainId
+      });
 
       res.json(connection);
     } catch (error) {
-      console.error("Connect wallet error:", error);
+      console.error("Wallet connect error:", error);
       res.status(500).json({ error: "Failed to connect wallet" });
     }
   });
@@ -51,7 +64,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Disconnect wallet
   app.post("/api/wallet/disconnect", async (req, res) => {
     try {
-      let mockConnections: any[] = []; // define mockConnections
       // Remove all connections for the user
       mockConnections = mockConnections.filter(conn => conn.userId !== 1);
       res.json({ success: true });
@@ -358,15 +370,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!Array.isArray(storage.intents)) {
       storage.intents = [];
     }
-    
+
     const activePlans = storage.intents.filter(i => i.isActive).length;
     const today = new Date().toDateString();
-    
+
     // Ensure storage.executionHistory is an array
     if (!Array.isArray(storage.executionHistory)) {
       storage.executionHistory = [];
     }
-    
+
     const executedToday = storage.executionHistory.filter(e => 
       e.status === 'SUCCESS' && new Date(e.executedAt).toDateString() === today
     ).length;

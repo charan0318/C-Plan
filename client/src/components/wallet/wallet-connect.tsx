@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Wallet, Loader2 } from "lucide-react";
 import { useWallet } from "@/hooks/use-wallet";
@@ -13,11 +14,11 @@ export function WalletConnect() {
       await connectWallet();
       toast({
         title: "Wallet Connected",
-        description: "Successfully connected to MetaMask",
+        description: "Successfully connected to MetaMask on Sepolia testnet",
       });
     } catch (error: any) {
       toast({
-        title: "Connection Failed",
+        title: "Connection Failed", 
         description: error.message || "Failed to connect wallet",
         variant: "destructive",
       });
@@ -52,7 +53,7 @@ export function WalletConnect() {
     <Button
       onClick={handleConnect}
       disabled={isConnecting}
-      className="bg-blue-600 hover:bg-blue-700 text-white"
+      className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
     >
       {isConnecting ? (
         <Loader2 size={16} className="mr-2 animate-spin" />

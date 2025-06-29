@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
 import { ethers } from "ethers";
 import type { WalletConnection } from "@/types/wallet";
 
@@ -22,7 +21,7 @@ export function useWallet() {
 
   const queryClient = useQueryClient();
 
-  // Always call useQuery - no conditional hooks
+  // Fix: Proper query function
   const { data: connections = [] } = useQuery<WalletConnection[]>({
     queryKey: ["/api/wallet/connections"],
     queryFn: async () => {
@@ -31,17 +30,22 @@ export function useWallet() {
       return response.json();
     },
     retry: 1,
-    staleTime: 5 * 60 * 1000,
-    enabled: true // Always enabled, no conditional logic
+    staleTime: 5 * 60 * 1000
   });
 
-  // Always call useMutation - no conditional hooks
   const connectWalletMutation = useMutation({
     mutationFn: async ({ address, chainId }: { address: string; chainId: number }) => {
-      const response = await apiRequest("POST", "/api/wallet/connect", {
-        walletAddress: address,
-        chainId
+      const response = await fetch("/api/wallet/connect", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          walletAddress: address,
+          chainId
+        })
       });
+      if (!response.ok) throw new Error("Failed to connect wallet");
       return response.json();
     },
     onSuccess: () => {
@@ -51,7 +55,14 @@ export function useWallet() {
 
   const disconnectWalletMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/wallet/disconnect", {});
+      const response = await fetch("/api/wallet/disconnect", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({})
+      });
+      if (!response.ok) throw new Error("Failed to disconnect wallet");
       return response.json();
     },
     onSuccess: () => {
@@ -63,74 +74,77 @@ export function useWallet() {
     setWalletState(prev => ({ ...prev, isConnecting: true }));
     
     try {
-      if (typeof window !== 'undefined' && window.ethereum) {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        
-        await provider.send("eth_requestAccounts", []);
-        
-        const signer = await provider.getSigner();
-        const address = await signer.getAddress();
-        const network = await provider.getNetwork();
-        const chainId = Number(network.chainId);
+      if (typeof window === 'undefined' || !window.ethereum) {
+        throw new Error("MetaMask not detected. Please install MetaMask to connect your wallet.");
+      }
 
-        if (chainId !== 11155111) {
-          try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      
+      await provider.send("eth_requestAccounts", []);
+      
+      const signer = await provider.getSigner();
+      const address = await signer.getAddress();
+      const network = await provider.getNetwork();
+      const chainId = Number(network.chainId);
+
+      // Check if we're on Sepolia (11155111)
+      if (chainId !== 11155111) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0xaa36a7' }],
+          });
+        } catch (switchError: any) {
+          if (switchError.code === 4902) {
+            await window.ethereum.request({
+              method: 'wallet_addEthereumChain',
+              params: [{
+                chainId: '0xaa36a7',
+                chainName: 'Sepolia Test Network',
+                rpcUrls: ['https://eth-sepolia.g.alchemy.com/v2/demo'],
+                blockExplorerUrls: ['https://sepolia.etherscan.io/'],
+                nativeCurrency: {
+                  name: 'Sepolia ETH',
+                  symbol: 'sepETH',
+                  decimals: 18
+                }
+              }]
+            });
+            
             await window.ethereum.request({
               method: 'wallet_switchEthereumChain',
               params: [{ chainId: '0xaa36a7' }],
             });
-          } catch (switchError: any) {
-            if (switchError.code === 4902) {
-              await window.ethereum.request({
-                method: 'wallet_addEthereumChain',
-                params: [{
-                  chainId: '0xaa36a7',
-                  chainName: 'Sepolia Test Network',
-                  rpcUrls: ['https://eth-sepolia.g.alchemy.com/v2/demo'],
-                  blockExplorerUrls: ['https://sepolia.etherscan.io/'],
-                  nativeCurrency: {
-                    name: 'Sepolia ETH',
-                    symbol: 'sepETH',
-                    decimals: 18
-                  }
-                }]
-              });
-              
-              await window.ethereum.request({
-                method: 'wallet_switchEthereumChain',
-                params: [{ chainId: '0xaa36a7' }],
-              });
-            } else {
-              throw new Error("Please switch to Sepolia testnet to continue");
-            }
+          } else {
+            throw new Error("Please switch to Sepolia testnet to continue");
           }
         }
-
-        const finalNetwork = await provider.getNetwork();
-        const finalChainId = Number(finalNetwork.chainId);
-        const finalSigner = await provider.getSigner();
-        const finalAddress = await finalSigner.getAddress();
-
-        if (finalChainId !== 11155111) {
-          throw new Error("Connection failed: Must be on Sepolia testnet");
-        }
-
-        await connectWalletMutation.mutateAsync({
-          address: finalAddress,
-          chainId: finalChainId
-        });
-
-        setWalletState({
-          isConnected: true,
-          address: finalAddress,
-          chainId: finalChainId,
-          isConnecting: false,
-          provider,
-          signer: finalSigner
-        });
-      } else {
-        throw new Error("MetaMask not detected. Please install MetaMask to connect your wallet.");
       }
+
+      // Get final network info after potential switch
+      const finalNetwork = await provider.getNetwork();
+      const finalChainId = Number(finalNetwork.chainId);
+      const finalSigner = await provider.getSigner();
+      const finalAddress = await finalSigner.getAddress();
+
+      if (finalChainId !== 11155111) {
+        throw new Error("Connection failed: Must be on Sepolia testnet");
+      }
+
+      // Connect to backend
+      await connectWalletMutation.mutateAsync({
+        address: finalAddress,
+        chainId: finalChainId
+      });
+
+      setWalletState({
+        isConnected: true,
+        address: finalAddress,
+        chainId: finalChainId,
+        isConnecting: false,
+        provider,
+        signer: finalSigner
+      });
     } catch (error) {
       setWalletState(prev => ({ ...prev, isConnecting: false }));
       throw error;
@@ -153,20 +167,54 @@ export function useWallet() {
     }
   };
 
-  // Always call useEffect - ensure hooks are in consistent order
+  // Check for existing wallet connection on mount
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.ethereum && walletState.isConnected) {
+    const checkExistingConnection = async () => {
+      if (typeof window !== 'undefined' && window.ethereum) {
+        try {
+          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+          if (accounts.length > 0) {
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const network = await provider.getNetwork();
+            const chainId = Number(network.chainId);
+            
+            if (chainId === 11155111) {
+              const signer = await provider.getSigner();
+              const address = await signer.getAddress();
+              
+              setWalletState({
+                isConnected: true,
+                address,
+                chainId,
+                isConnecting: false,
+                provider,
+                signer
+              });
+            }
+          }
+        } catch (error) {
+          console.error("Error checking existing connection:", error);
+        }
+      }
+    };
+
+    checkExistingConnection();
+  }, []);
+
+  // Handle account and chain changes
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.ethereum) {
       const handleAccountsChanged = (accounts: string[]) => {
         if (accounts.length === 0) {
           disconnectWallet();
-        } else if (accounts[0] !== walletState.address) {
+        } else if (walletState.isConnected && accounts[0] !== walletState.address) {
           connectWallet();
         }
       };
 
       const handleChainChanged = (chainId: string) => {
         const newChainId = parseInt(chainId, 16);
-        if (newChainId !== 11155111) {
+        if (newChainId !== 11155111 && walletState.isConnected) {
           disconnectWallet();
         }
       };
