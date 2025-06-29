@@ -129,6 +129,18 @@ export function useContract() {
     enabled: isConnected && !!address && !!walletState.provider && CONTRACT_CONFIG.address !== "0x0000000000000000000000000000000000000000"
   });
 
+  const isContractDeployed = CONTRACT_CONFIG.address !== "0x0000000000000000000000000000000000000000";
+  
+  // Debug logging
+  if (typeof window !== 'undefined') {
+    console.log('Contract Status:', {
+      address: CONTRACT_CONFIG.address,
+      isContractDeployed,
+      isConnected,
+      hasProvider: !!walletState.provider
+    });
+  }
+
   return {
     isLoading: isLoadingIntents || isTransactionPending,
     userIntents,
@@ -138,6 +150,6 @@ export function useContract() {
     isCreatingIntent: createIntentMutation.isPending,
     isExecutingIntent: executeIntentMutation.isPending,
     contractAddress: CONTRACT_CONFIG.address,
-    isContractDeployed: CONTRACT_CONFIG.address !== "0x0000000000000000000000000000000000000000"
+    isContractDeployed
   };
 }

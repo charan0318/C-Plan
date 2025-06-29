@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 
 export default function Planner() {
-  const { createIntent, isTransactionPending, canInteract } = useContract();
+  const { createIntent, isTransactionPending, isContractDeployed } = useContract();
   const { isConnected, address } = useWallet();
   const { toast } = useToast();
 
@@ -198,7 +198,7 @@ export default function Planner() {
                 </Link>
                 <Button
                   onClick={handleCreateIntent}
-                  disabled={!canInteract || isTransactionPending || isCreating}
+                  disabled={!isContractDeployed || isTransactionPending || isCreating}
                   className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                 >
                   {isCreating ? (
