@@ -258,6 +258,11 @@ export function useContract() {
             const ethBalance = parseFloat(ethers.formatEther(ethInContract));
             balances['ETH_DEPOSITED'] = ethBalance.toString();
             console.log(`🎯 ETH earned from swaps in contract: ${balances['ETH_DEPOSITED']} ETH (raw: ${ethInContract.toString()})`);
+            
+            // Force refresh if balance is detected but showing as 0
+            if (ethInContract > 0n && ethBalance > 0) {
+              console.log(`✅ Found ETH balance in contract: ${ethBalance} ETH`);
+            }
           } catch (error) {
             console.error('❌ Error fetching ETH balance in contract:', error);
             balances['ETH_DEPOSITED'] = '0';
@@ -267,18 +272,16 @@ export function useContract() {
           try {
             const wethInContract = await contract.getUserBalance(address, TOKENS.WETH);
             const wethBalance = parseFloat(ethers.formatEther(wethInContract));
-            const currentWethDeposited = parseFloat(balances['WETH_DEPOSITED'] || '0');
             
             // Update WETH balance to show total WETH in contract
             balances['WETH_DEPOSITED'] = wethBalance.toString();
             console.log(`🔄 Total WETH in contract: ${balances['WETH_DEPOSITED']} WETH (raw: ${wethInContract.toString()})`);
             
-            // If WETH from swaps is more than originally deposited, add it to ETH display
-            if (wethBalance > currentWethDeposited) {
-              const earnedWeth = wethBalance - currentWethDeposited;
+            // Add WETH balance to ETH display since they're equivalent
+            if (wethBalance > 0) {
               const currentEthBalance = parseFloat(balances['ETH_DEPOSITED'] || '0');
-              balances['ETH_DEPOSITED'] = (currentEthBalance + earnedWeth).toString();
-              console.log(`🎯 Adding ${earnedWeth} WETH as earned ETH. Total ETH shown: ${balances['ETH_DEPOSITED']}`);
+              balances['ETH_DEPOSITED'] = (currentEthBalance + wethBalance).toString();
+              console.log(`🎯 Total ETH+WETH earned: ${balances['ETH_DEPOSITED']} (${currentEthBalance} ETH + ${wethBalance} WETH)`);
             }
           } catch (error) {
             console.warn('⚠️ Could not fetch WETH balance for ETH calculation:', error);
@@ -365,8 +368,10 @@ export function useContract() {
       return balances;
     },
     enabled: isConnected && !!address && !!walletState.provider,
-    refetchInterval: 2000, // Check every 2 seconds for faster updates
-    staleTime: 500 // Consider data stale after 500ms for immediate refresh
+    refetchInterval: 1000, // Check every 1 second for immediate updates
+    staleTime: 100, // Consider data stale after 100ms for immediate refresh
+    refetchOnWindowFocus: true,
+    refetchOnMount: true
   });
 
   // Get ETH price
