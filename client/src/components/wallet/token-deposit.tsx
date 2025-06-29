@@ -21,7 +21,6 @@ export function TokenDeposit() {
 
   const supportedTokens = [
     { symbol: 'USDC', name: 'USD Coin', icon: '💵' },
-    { symbol: 'DAI', name: 'DAI Stablecoin', icon: '🪙' },
     { symbol: 'WETH', name: 'Wrapped Ether', icon: '🔄' }
   ];
 
@@ -391,32 +390,7 @@ export function TokenDeposit() {
           </p>
         </div>
 
-        <div className="mt-2 p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-orange-800 dark:text-orange-200">🔍 Debug Token Addresses</span>
-            <Button
-              onClick={() => {
-                console.log('🔍 DEBUGGING TOKEN ADDRESSES:');
-                console.log('USDC:', '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238');
-                console.log('DAI:', '0xFF34B3d4Aee8ddCd6F9AFFFB6Fe49bD371b8a357');
-                console.log('WETH:', '0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14');
-                console.log('Current balances:', tokenBalances);
-                toast({
-                  title: "Debug Info Logged",
-                  description: "Check browser console for token address verification",
-                });
-              }}
-              size="sm"
-              variant="outline"
-              className="bg-orange-100 dark:bg-orange-900/30"
-            >
-              Verify Addresses
-            </Button>
-          </div>
-          <p className="text-xs text-orange-800 dark:text-orange-200">
-            Click to verify token contract addresses and current balances
-          </p>
-        </div>
+        
 
         <div className="space-y-3">
           <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">

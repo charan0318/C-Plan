@@ -337,27 +337,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             } catch (onChainError) {
               console.error("❌ On-chain execution failed, falling back to simulation:", onChainError.message);
-              
+
               // Simulate the swap instead
               console.log("🔄 Falling back to simulated swap execution...");
-              
+
               executionMessage = `✅ DCA Swap simulated: ${dollarAmount} USDC → ${ethAmount} ETH at $${currentEthPrice}/ETH`;
-              
+
               executionResult.transactionHash = `0xsimulated${Date.now()}`;
               executionResult.gasUsed = "21000";
               executionResult.actualEthReceived = ethAmount;
               executionResult.onChainSuccess = false;
               executionResult.simulatedSuccess = true;
-              
+
               // Update mock balances to reflect the simulated swap
               const existingConnection = mockConnections.find(c => c.balances);
               if (existingConnection) {
                 const currentUsdcBalance = parseFloat(existingConnection.balances.USDC || '0');
                 const currentWethBalance = parseFloat(existingConnection.balances.WETH || '0');
-                
+
                 existingConnection.balances.USDC = Math.max(0, currentUsdcBalance - dollarAmount).toString();
                 existingConnection.balances.WETH = (currentWethBalance + parseFloat(ethAmount)).toString();
-                
+
                 console.log(`📊 Updated mock balances: USDC: ${existingConnection.balances.USDC}, WETH: ${existingConnection.balances.WETH}`);
               }
             }

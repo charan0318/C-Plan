@@ -89,7 +89,7 @@ export class MemStorage implements IStorage {
         this.chatMessages = new Map();
         this.nftTokens = [];
         this.currentId = 1;
-        console.log('Initialized fresh storage');
+        console.log('Initialized fresh storage - all data cleared');
       }
     } catch (error) {
       console.error('Error loading from storage:', error);
