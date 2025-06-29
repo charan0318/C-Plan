@@ -214,7 +214,7 @@ export function useContract() {
     enabled: !!address && !!walletState.provider && isContractDeployed
   });
 
-  // Get token balances - fetch directly from token contracts
+  // Get token balances - fetch directly from token contracts and deposited balances from smart contract
   const { data: tokenBalances = {}, refetch: refetchBalances } = useQuery({
     queryKey: ['token-balances', address],
     queryFn: async () => {
@@ -231,6 +231,25 @@ export function useContract() {
       } catch (error) {
         console.error('Error fetching ETH balance:', error);
         balances.ETH = '0';
+      }
+
+      // Get deposited balances from smart contract if available
+      if (isContractDeployed) {
+        try {
+          const contract = getContract(walletState.provider);
+          for (const [symbol, tokenAddress] of Object.entries(TOKENS)) {
+            try {
+              const depositedBalance = await contract.getUserBalance(address, tokenAddress);
+              balances[`${symbol}_DEPOSITED`] = ethers.formatEther(depositedBalance);
+              console.log(`${symbol} deposited balance:`, balances[`${symbol}_DEPOSITED`]);
+            } catch (error) {
+              console.error(`Error fetching ${symbol} deposited balance:`, error);
+              balances[`${symbol}_DEPOSITED`] = '0';
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching deposited balances from contract:', error);
+        }
       }
 
       // Get token balances directly from token contracts with proper decimals
@@ -367,7 +386,12 @@ export function useContract() {
       try {
         const contract = getContractInstance();
         const tokenAddress = TOKENS[token as keyof typeof TOKENS];
-        const amountInWei = ethers.parseEther(amount);
+        
+        // Use proper decimals for each token
+        const decimals = token === 'USDC' ? 6 : 18;
+        const amountInWei = ethers.parseUnits(amount, decimals);
+
+        console.log(`Depositing ${amount} ${token} (${amountInWei.toString()} wei) to contract`);
 
         toast({
           title: "Approving Token...",
@@ -377,9 +401,21 @@ export function useContract() {
         // First approve the contract to spend tokens
         const tokenContract = new ethers.Contract(
           tokenAddress,
-          ["function approve(address spender, uint256 amount) external returns (bool)"],
+          [
+            "function approve(address spender, uint256 amount) external returns (bool)",
+            "function allowance(address owner, address spender) external view returns (uint256)",
+            "function balanceOf(address account) external view returns (uint256)"
+          ],
           signer
         );
+
+        // Check user's token balance first
+        const userBalance = await tokenContract.balanceOf(address);
+        console.log(`User ${token} balance: ${ethers.formatUnits(userBalance, decimals)}`);
+
+        if (userBalance < amountInWei) {
+          throw new Error(`Insufficient ${token} balance. You have ${ethers.formatUnits(userBalance, decimals)} ${token} but trying to deposit ${amount} ${token}`);
+        }
 
         const approveTx = await tokenContract.approve(CONTRACT_CONFIG.address, amountInWei);
         await approveTx.wait();
@@ -400,6 +436,7 @@ export function useContract() {
 
         return { token, amount, transactionHash: depositTx.hash };
       } catch (error: any) {
+        console.error("Deposit error:", error);
         toast({
           title: "Deposit Failed",
           description: error.message || "Failed to deposit tokens on-chain",
@@ -425,12 +462,25 @@ export function useContract() {
       try {
         const contract = getContractInstance();
         const tokenAddress = TOKENS[token as keyof typeof TOKENS];
-        const amountInWei = ethers.parseEther(amount);
+        
+        // Use proper decimals for each token
+        const decimals = token === 'USDC' ? 6 : 18;
+        const amountInWei = ethers.parseUnits(amount, decimals);
+
+        console.log(`Withdrawing ${amount} ${token} (${amountInWei.toString()} wei) from contract`);
 
         toast({
           title: "Withdrawing Token...",
           description: `Withdrawing ${amount} ${token} from contract`,
         });
+
+        // Check if user has sufficient deposited balance
+        const depositedBalance = await contract.getUserBalance(address, tokenAddress);
+        console.log(`User deposited balance: ${ethers.formatUnits(depositedBalance, decimals)} ${token}`);
+
+        if (depositedBalance < amountInWei) {
+          throw new Error(`Insufficient deposited balance. You have ${ethers.formatUnits(depositedBalance, decimals)} ${token} but trying to withdraw ${amount} ${token}`);
+        }
 
         const withdrawTx = await contract.withdrawToken(tokenAddress, amountInWei);
         const receipt = await withdrawTx.wait();
@@ -442,6 +492,7 @@ export function useContract() {
 
         return { token, amount, transactionHash: withdrawTx.hash };
       } catch (error: any) {
+        console.error("Withdrawal error:", error);
         toast({
           title: "Withdrawal Failed",
           description: error.message || "Failed to withdraw tokens from blockchain",
