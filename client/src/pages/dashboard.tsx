@@ -1,20 +1,32 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useContract } from "@/hooks/use-contract";
-import { useWallet } from "@/hooks/use-wallet";
-import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { StatsCards } from "@/components/dashboard/stats-cards";
+import { PlansTable } from "@/components/dashboard/plans-table";
 import { TokenBalances } from "@/components/dashboard/token-balances";
 import { TokenDeposit } from "@/components/wallet/token-deposit";
 import { SwapExecutor } from "@/components/swap/swap-executor";
 import { EthPriceMonitor } from "@/components/dashboard/eth-price-monitor";
-import { ContractStatus } from "@/components/dashboard/contract-status";
-import { Activity, CheckCircle, Clock, Trophy, Wallet, TrendingUp, Target, Zap, Loader2 } from "lucide-react";
-import { formatAddress } from "@/lib/wallet";
+import { 
+  Activity, 
+  Wallet, 
+  RefreshCw, 
+  TrendingUp,
+  Bot,
+  Sparkles,
+  Zap
+} from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { CardDescription } from "@/components/ui/card";
+import { useContract } from "@/hooks/use-contract";
+import { useWallet } from "@/hooks/use-wallet";
+import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
+import { formatAddress } from "@/lib/wallet";
+import { Loader2 } from "lucide-react";
 
 export interface DashboardStats {
   activePlans: number;
@@ -115,6 +127,22 @@ function NFTCollection() {
 }
 
 export default function Dashboard() {
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const { data: nfts } = useQuery({
+    queryKey: ["nfts", refreshKey],
+    queryFn: async () => {
+      const response = await fetch("/api/nfts");
+      if (!response.ok) throw new Error("Failed to fetch NFTs");
+      return response.json();
+    },
+    refetchInterval: 3000,
+  });
+
+  const handleRefresh = () => {
+    setRefreshKey(prev => prev + 1);
+  };
+
   const { data: userIntents = [], isLoading: isLoadingIntents } = useQuery({
     queryKey: ["/api/intents"],
     queryFn: async () => {
@@ -264,225 +292,161 @@ export default function Dashboard() {
   const inactiveIntents = userIntents.filter(intent => !intent.isActive);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 relative overflow-hidden">
+      {/* Particle Background */}
+      <div className="particles">
+        {[...Array(40)].map((_, i) => (
+          <div
+            key={i}
+            className="particle animate-particle-flow"
+            style={{
+              left: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 8}s`,
+              animationDuration: `${8 + Math.random() * 4}s`
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="relative z-10 max-w-7xl mx-auto p-6">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Dashboard
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Connected: {formatAddress(address!)}
-          </p>
+        <div className="mb-8 animate-fade-in">
+          <div className="flex items-center justify-between">
+            <div>
+              <Badge variant="outline" className="mb-4 px-4 py-2 glass-card-light neon-border text-blue-300">
+                <Bot className="mr-2 h-4 w-4" />
+                AI Dashboard
+              </Badge>
+              <h1 className="text-4xl md:text-5xl font-bold text-white mb-2 neon-text">
+                Wallet
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400 ml-3">
+                  Command Center
+                </span>
+              </h1>
+              <p className="text-blue-200">Monitor and manage your automated trading strategies</p>
+            </div>
+
+            <Button 
+              onClick={handleRefresh}
+              variant="outline"
+              className="glass-card-light border-blue-400/30 text-blue-100 hover:bg-blue-500/10 neon-border"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Refresh
+            </Button>
+          </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Intents</CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {isLoadingIntents ? "..." : userIntents.length}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Intents</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {isLoadingIntents ? "..." : userIntents.filter(intent => intent.isActive).length}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Executed Today</CardTitle>
-              <CheckCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {stats.executedToday}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">NFT Balance</CardTitle>
-              <Trophy className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {isLoadingBalance ? "..." : nftBalance}
-              </div>
-            </CardContent>
-          </Card>
+        <div className="mb-8 animate-slide-up">
+          <StatsCards />
         </div>
 
-        {/* Intents Tabs */}
-        <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="intents">My Intents</TabsTrigger>
-            <TabsTrigger value="tokens">Tokens</TabsTrigger>
-            <TabsTrigger value="swap">Swap</TabsTrigger>
-            <TabsTrigger value="nfts">NFT Collection</TabsTrigger>
+        {/* Main Content Tabs */}
+        <Tabs defaultValue="overview" className="animate-scale-in">
+          <TabsList className="glass-card border border-blue-500/20 mb-6">
+            <TabsTrigger 
+              value="overview" 
+              className="data-[state=active]:bg-blue-600/20 data-[state=active]:text-blue-100 text-blue-300"
+            >
+              <Activity className="mr-2 h-4 w-4" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger 
+              value="wallet" 
+              className="data-[state=active]:bg-blue-600/20 data-[state=active]:text-blue-100 text-blue-300"
+            >
+              <Wallet className="mr-2 h-4 w-4" />
+              Wallet
+            </TabsTrigger>
+            <TabsTrigger 
+              value="trading" 
+              className="data-[state=active]:bg-blue-600/20 data-[state=active]:text-blue-100 text-blue-300"
+            >
+              <TrendingUp className="mr-2 h-4 w-4" />
+              Trading
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-              <div className="col-span-3 space-y-4">
-                <TokenBalances />
-                <ContractStatus />
-              </div>
-
-              <Card className="col-span-4">
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Plans Table */}
+              <Card className="glass-card border-blue-500/20 hover:neon-border transition-all duration-500">
                 <CardHeader>
-                  <CardTitle>Recent Activity</CardTitle>
+                  <CardTitle className="text-white flex items-center">
+                    <Zap className="mr-2 h-5 w-5 text-blue-400" />
+                    Active Plans
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {userIntents.slice(0, 5).map((intent, index) => (
-                      <div key={index} className="border-b pb-2 last:border-none">
-                        <p className="text-sm font-medium">{intent.description}</p>
-                        <p className="text-xs text-gray-500">
-                          {new Date(intent.timestamp * 1000).toLocaleDateString()}
-                        </p>
+                  <PlansTable />
+                </CardContent>
+              </Card>
+
+              {/* ETH Price Monitor */}
+              <Card className="glass-card border-blue-500/20 hover:neon-border transition-all duration-500">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center">
+                    <TrendingUp className="mr-2 h-5 w-5 text-green-400" />
+                    Market Monitor
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <EthPriceMonitor />
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* NFT Gallery */}
+            {nfts && nfts.length > 0 && (
+              <Card className="glass-card border-purple-500/20 hover:neon-border transition-all duration-500">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center">
+                    <Sparkles className="mr-2 h-5 w-5 text-purple-400" />
+                    Execution NFTs
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {nfts.map((nft: any) => (
+                      <div key={nft.tokenId} className="glass-card-light p-4 rounded-xl border border-purple-500/20 hover:neon-border transition-all duration-300 group">
+                        <div className="aspect-square bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-lg mb-3 flex items-center justify-center">
+                          <Sparkles className="h-8 w-8 text-purple-400 animate-glow" />
+                        </div>
+                        <h3 className="font-medium text-white text-sm mb-1 group-hover:neon-text transition-all duration-300">
+                          {nft.name}
+                        </h3>
+                        <Badge variant="secondary" className="text-xs glass-card-light border-purple-400/30">
+                          #{nft.tokenId}
+                        </Badge>
                       </div>
                     ))}
                   </div>
                 </CardContent>
               </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="intents" className="space-y-4">
-            {isLoadingIntents ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                <p className="mt-2 text-gray-600 dark:text-gray-400">Loading intents...</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {userIntents.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Target size={48} className="mx-auto mb-4 text-gray-400" />
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                      No Intents Yet
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">
-                      Create automated swaps and DeFi strategies
-                    </p>
-                    <div className="space-y-2 max-w-md mx-auto">
-                      <div className="text-sm text-gray-500 space-y-1">
-                        <p>• Swap WETH ↔ ETH when price moves</p>
-                        <p>• Dollar cost average into ETH</p>
-                        <p>• Automated rebalancing strategies</p>
-                      </div>
-                    </div>
-                    <Link href="/planner">
-                      <Button className="mt-4">
-                        <Zap className="mr-2 h-4 w-4" />
-                        Create First Intent
-                      </Button>
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="grid gap-4">
-                    {userIntents.map((intent) => (
-                      <Card key={intent.id}>
-                        <CardHeader>
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <CardTitle className="text-lg">{intent.description}</CardTitle>
-                              <CardDescription>
-                                Estimated Cost: {intent.estimatedCost} ETH
-                              </CardDescription>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <Badge variant="outline" className="bg-green-100 text-green-800">
-                                <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                                Monitoring
-                              </Badge>
-                              {intent.isActive && (
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleExecuteIntent(intent.id)}
-                                  disabled={executingIntentId === intent.id}
-                                  className="bg-blue-600 hover:bg-blue-700"
-                                >
-                                  {executingIntentId === intent.id ? (
-                                    <>
-                                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                                      Executing...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Zap className="mr-1 h-3 w-3" />
-                                      Execute
-                                    </>
-                                  )}
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <div className="text-sm text-gray-600 dark:text-gray-400">
-                                Created: {new Date(intent.timestamp * 1000).toLocaleDateString()}
-                              </div>
-                              {!intent.isActive && (
-                                <Badge variant="secondary">
-                                  <CheckCircle className="mr-1 h-3 w-3" />
-                                  Completed
-                                </Badge>
-                              )}
-                            </div>
-
-                            {/* Show DCA monitoring info */}
-                            {intent.description.toLowerCase().includes('buy') && 
-                             intent.description.toLowerCase().includes('worth') && (
-                              <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                                <div className="text-xs text-blue-700 dark:text-blue-300">
-                                  <div className="flex items-center justify-between mb-1">
-                                    <span>💰 DCA Strategy Active</span>
-                                    <span className="font-mono">ETH: ${ethPrice?.toLocaleString() || '---'}</span>
-                                  </div>
-                                  <div className="text-[10px] opacity-75">
-                                    Waiting for price conditions • Next check in ~1hr
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}</div>
             )}
           </TabsContent>
 
-          <TabsContent value="tokens" className="space-y-4">
-            <TokenDeposit />
+          <TabsContent value="wallet" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-6">
+                <Card className="glass-card border-blue-500/20 hover:neon-border transition-all duration-500">
+                  <TokenBalances />
+                </Card>
+              </div>
+
+              <div className="space-y-6">
+                <Card className="glass-card border-blue-500/20 hover:neon-border transition-all duration-500">
+                  <TokenDeposit />
+                </Card>
+              </div>
+            </div>
           </TabsContent>
 
-          <TabsContent value="swap" className="space-y-4">
-            <SwapExecutor />
-          </TabsContent>
-
-          <TabsContent value="nfts" className="space-y-4">
-            <NFTCollection />
+          <TabsContent value="trading" className="space-y-6">
+            <Card className="glass-card border-green-500/20 hover:neon-border transition-all duration-500">
+              <SwapExecutor />
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

@@ -37,15 +37,15 @@ export function TokenDeposit() {
     try {
       setIsApproving(true);
       await depositToken({ token: selectedToken, amount });
-      
+
       // Force immediate refresh of balances
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ["token-balances"] });
       }, 1000);
-      
+
       setAmount("");
       setSelectedToken("");
-      
+
       toast({
         title: "Deposit Complete",
         description: `${amount} ${selectedToken} deposited successfully!`,
@@ -70,15 +70,15 @@ export function TokenDeposit() {
     try {
       setIsApproving(true);
       await withdrawToken({ token: selectedToken, amount });
-      
+
       // Force immediate refresh of balances
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ["token-balances"] });
       }, 1000);
-      
+
       setAmount("");
       setSelectedToken("");
-      
+
       toast({
         title: "Withdrawal Complete",
         description: `${amount} ${selectedToken} withdrawn successfully!`,
@@ -128,9 +128,9 @@ export function TokenDeposit() {
         title: "Withdrawing to Wallet",
         description: `Withdrawing ${depositedBalance} ${token} to your MetaMask wallet...`,
       });
-      
+
       await withdrawToken({ token, amount: depositedBalance });
-      
+
       toast({
         title: "Withdrawal Complete",
         description: `${depositedBalance} ${token} withdrawn to your wallet. Check MetaMask!`,
@@ -226,7 +226,7 @@ export function TokenDeposit() {
               placeholder="0.00"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="pr-16"
+              className="pr-16 glass-card-light border-blue-400/30 text-white placeholder-blue-300 focus:border-blue-400"
               step="0.000001"
               min="0"
             />
@@ -390,7 +390,7 @@ export function TokenDeposit() {
           </p>
         </div>
 
-        
+
 
         <div className="space-y-3">
           <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
