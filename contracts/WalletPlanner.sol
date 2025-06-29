@@ -483,17 +483,14 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
                 
                 // Execute swap if applicable
                 if (intent.tokenIn != address(0) && intent.amountIn > 0) {
-                    try this._executeSwapInternal(
+                    // Call internal function directly without try/catch since it's internal
+                    _executeSwapInternal(
                         intent.tokenIn,
                         intent.amountIn,
                         intent.tokenOut,
                         intent.user,
                         intent.slippageTolerance
-                    ) {
-                        // Swap executed successfully
-                    } catch {
-                        // Swap failed, but still mint NFT
-                    }
+                    );
                 }
                 
                 _mint(intent.user, 1);
