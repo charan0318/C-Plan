@@ -25,6 +25,84 @@ export interface Intent {
   executed: boolean;
 }
 
+function NFTCollection() {
+  const { data: nfts = [], isLoading } = useQuery({
+    queryKey: ["/api/nfts"],
+    queryFn: async () => {
+      const response = await fetch("/api/nfts");
+      if (!response.ok) throw new Error("Failed to fetch NFTs");
+      return response.json();
+    },
+    refetchInterval: 1000
+  });
+
+  if (isLoading) {
+    return (
+      <div className="text-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+        <p className="mt-2 text-gray-600 dark:text-gray-400">Loading NFTs...</p>
+      </div>
+    );
+  }
+
+  if (nfts.length === 0) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="text-center py-8">
+            <Trophy size={48} className="mx-auto mb-4 text-gray-400" />
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              No NFTs Yet
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Execute intents to earn NFT rewards
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {nfts.map((nft, index) => (
+        <Card key={index} className="overflow-hidden">
+          <div className="aspect-square bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900 dark:to-purple-900 flex items-center justify-center">
+            <img 
+              src={nft.image} 
+              alt={nft.name}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.parentElement!.innerHTML = `<div class="text-6xl">🏆</div>`;
+              }}
+            />
+          </div>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">{nft.name}</CardTitle>
+            <CardDescription className="text-xs">
+              #{nft.tokenId}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+              {nft.description}
+            </p>
+            <div className="space-y-1">
+              {nft.attributes.map((attr, i) => (
+                <div key={i} className="flex justify-between text-xs">
+                  <span className="text-gray-500">{attr.trait_type}:</span>
+                  <span className="font-medium">{attr.value}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { data: userIntents = [], isLoading: isLoadingIntents } = useQuery({
     queryKey: ["/api/intents"],
@@ -49,9 +127,11 @@ export default function Dashboard() {
         const data = await response.json();
         return Array.isArray(data) ? data.length : 0;
       } catch (error) {
+        console.error("Error fetching NFTs:", error);
         return 0;
       }
-    }
+    },
+    refetchInterval: 1000 // Refetch every second to update NFT count
   });
   
   const walletState = useWallet();
@@ -87,6 +167,7 @@ export default function Dashboard() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/intents"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/nfts"] });
       
       // Show success message with NFT info
       if (data.nftMinted) {
@@ -212,6 +293,7 @@ export default function Dashboard() {
             <TabsList>
               <TabsTrigger value="active">Active Intents</TabsTrigger>
               <TabsTrigger value="executed">Executed Intents</TabsTrigger>
+              <TabsTrigger value="nfts">NFT Collection ({nftBalance})</TabsTrigger>
             </TabsList>
             <Link href="/planner">
               <Button>
@@ -334,6 +416,10 @@ export default function Dashboard() {
                 ))}
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="nfts" className="space-y-4">
+            <NFTCollection />
           </TabsContent>
         </Tabs>
       </div>

@@ -39,6 +39,7 @@ export class MemStorage implements IStorage {
   private executionHistory: Map<number, ExecutionHistory>;
   private chatMessages: Map<number, ChatMessage>;
   private currentId: number;
+  public nftTokens: any[];
 
   constructor() {
     this.users = new Map();
@@ -46,6 +47,7 @@ export class MemStorage implements IStorage {
     this.intents = new Map();
     this.executionHistory = new Map();
     this.chatMessages = new Map();
+    this.nftTokens = [];
     this.currentId = 1;
 
     // Initialize with mock data for demonstration

@@ -115,10 +115,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Intent not found" });
       }
 
+      if (intent.executed) {
+        return res.status(400).json({ error: "Intent already executed" });
+      }
+
       // Update intent as executed
       const updatedIntent = await storage.updateIntent(intentId, { executed: true });
+
+      // Mock NFT minting
+      const nftToken = {
+        tokenId: Math.floor(Math.random() * 10000) + 1,
+        name: `C-PLAN Execution #${Math.floor(Math.random() * 10000) + 1}`,
+        description: `NFT awarded for executing: ${intent.action} ${intent.amount || ''} ${intent.token}`,
+        image: `https://api.dicebear.com/7.x/shapes/svg?seed=${intent.id}`,
+        attributes: [
+          { trait_type: "Action", value: intent.action },
+          { trait_type: "Token", value: intent.token },
+          { trait_type: "Amount", value: intent.amount || "N/A" },
+          { trait_type: "Execution Date", value: new Date().toISOString().split('T')[0] }
+        ]
+      };
+
+      // Store NFT in memory (for demo purposes)
+      if (!storage.nftTokens) {
+        storage.nftTokens = [];
+      }
+      storage.nftTokens.push(nftToken);
       
-      res.json({ success: true, intent: updatedIntent });
+      res.json({ 
+        success: true, 
+        intent: updatedIntent,
+        nftMinted: nftToken,
+        message: `🎉 Automation executed successfully! You earned NFT #${nftToken.tokenId} as a reward.`
+      });
     } catch (error) {
       console.error("Execute intent error:", error);
       res.status(500).json({ error: "Failed to execute intent" });
@@ -128,7 +157,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get NFTs (mock endpoint)
   app.get("/api/nfts", async (req, res) => {
     try {
-      res.json([]);
+      const nfts = storage.nftTokens || [];
+      res.json(nfts);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch NFTs" });
     }
