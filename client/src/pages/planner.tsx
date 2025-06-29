@@ -3,28 +3,49 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Brain, 
-  Zap, 
   Target, 
-  MessageSquare, 
   Plus, 
   Play,
-  Bot,
-  Sparkles,
   Activity,
   TrendingUp,
   Shield,
+  DollarSign,
   ArrowRight,
   Clock,
-  DollarSign
+  Loader2
 } from "lucide-react";
-import { PlannerChat } from "@/components/chat/planner-chat";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+
+interface IntentFormData {
+  title: string;
+  description: string;
+  action: "STAKE" | "SEND" | "REMIND" | "SWAP" | "";
+  token: string;
+  amount: string;
+  frequency: "WEEKLY" | "MONTHLY" | "DAILY" | "CONDITION_BASED" | "";
+  targetChain: string;
+}
 
 export default function Planner() {
-  const [showChat, setShowChat] = useState(false);
+  const [formData, setFormData] = useState<IntentFormData>({
+    title: "",
+    description: "",
+    action: "",
+    token: "",
+    amount: "",
+    frequency: "",
+    targetChain: "ethereum"
+  });
+
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: stats } = useQuery({
     queryKey: ["dashboard-stats"],
@@ -35,6 +56,64 @@ export default function Planner() {
     },
   });
 
+  const createIntentMutation = useMutation({
+    mutationFn: async (intentData: IntentFormData) => {
+      const response = await fetch("/api/intents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...intentData,
+          walletAddress: "0x742d35Cc6634C0532925a3b8D38e4d9C87Ce6f4C" // Mock wallet address
+        }),
+      });
+      if (!response.ok) throw new Error("Failed to create intent");
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Intent Created Successfully! 🎉",
+        description: "Your automation plan is now active and ready to execute.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["intents"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      setFormData({
+        title: "",
+        description: "",
+        action: "",
+        token: "",
+        amount: "",
+        frequency: "",
+        targetChain: "ethereum"
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Failed to Create Intent",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.title || !formData.description || !formData.action || !formData.token || !formData.frequency) {
+      toast({
+        title: "Missing Required Fields",
+        description: "Please fill in all required fields to create your intent.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    createIntentMutation.mutate(formData);
+  };
+
+  const handleInputChange = (field: keyof IntentFormData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
   const exampleStrategies = [
     {
       title: "Weekly DCA Strategy",
@@ -42,7 +121,15 @@ export default function Planner() {
       cost: "0.02 ETH",
       icon: TrendingUp,
       color: "blue",
-      category: "DCA"
+      category: "DCA",
+      template: {
+        title: "Weekly DCA ETH",
+        description: "Automatically buy ETH every week when price conditions are met",
+        action: "SWAP" as const,
+        token: "WETH",
+        amount: "100",
+        frequency: "WEEKLY" as const
+      }
     },
     {
       title: "Yield Optimization",
@@ -50,7 +137,15 @@ export default function Planner() {
       cost: "0.05 ETH",
       icon: Activity,
       color: "green",
-      category: "Yield"
+      category: "Yield",
+      template: {
+        title: "Auto Stake USDC",
+        description: "Stake USDC when high yield opportunities are available",
+        action: "STAKE" as const,
+        token: "USDC",
+        amount: "1000",
+        frequency: "CONDITION_BASED" as const
+      }
     },
     {
       title: "Smart Rebalancing",
@@ -58,7 +153,15 @@ export default function Planner() {
       cost: "0.03 ETH",
       icon: Shield,
       color: "purple",
-      category: "Risk Management"
+      category: "Risk Management",
+      template: {
+        title: "Portfolio Rebalance",
+        description: "Maintain 70/30 ETH/USDC allocation automatically",
+        action: "SWAP" as const,
+        token: "WETH",
+        amount: "500",
+        frequency: "CONDITION_BASED" as const
+      }
     },
     {
       title: "Profit Taking",
@@ -66,9 +169,25 @@ export default function Planner() {
       cost: "0.04 ETH",
       icon: DollarSign,
       color: "orange",
-      category: "Profit"
+      category: "Profit",
+      template: {
+        title: "Auto Profit Taking",
+        description: "Sell portion of holdings when profit targets are reached",
+        action: "SWAP" as const,
+        token: "WETH",
+        amount: "250",
+        frequency: "CONDITION_BASED" as const
+      }
     }
   ];
+
+  const useTemplate = (template: typeof exampleStrategies[0]['template']) => {
+    setFormData(prev => ({
+      ...prev,
+      ...template,
+      targetChain: "ethereum"
+    }));
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/50">
@@ -76,8 +195,8 @@ export default function Planner() {
         {/* Header */}
         <div className="mb-12 text-center">
           <Badge variant="outline" className="mb-6 px-4 py-2 text-primary border-primary/20">
-            <Bot className="mr-2 h-4 w-4" />
-            AI Strategy Builder
+            <Target className="mr-2 h-4 w-4" />
+            Create Automation Plan
           </Badge>
 
           <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
@@ -87,173 +206,234 @@ export default function Planner() {
           </h1>
 
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-8">
-            Design intelligent trading strategies using natural language. Our AI will understand your goals 
-            and create automated plans that execute when your conditions are met.
+            Set up automated trading strategies with our simple form. Define your conditions, 
+            choose your tokens, and let the system execute your plans automatically.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+          <Link href="/dashboard">
             <Button
-              onClick={() => setShowChat(true)}
               size="lg"
+              variant="outline"
               className="h-12 px-8"
             >
-              <MessageSquare className="mr-2 h-5 w-5" />
-              Start Building Strategy
-              <Plus className="ml-2 h-5 w-5" />
+              <Play className="mr-2 h-5 w-5" />
+              View Dashboard
             </Button>
-
-            <Link href="/dashboard">
-              <Button
-                size="lg"
-                variant="outline"
-                className="h-12 px-8"
-              >
-                <Play className="mr-2 h-5 w-5" />
-                View Dashboard
-              </Button>
-            </Link>
-          </div>
+          </Link>
         </div>
 
-        {/* How It Works */}
-        <div className="grid md:grid-cols-3 gap-6 mb-12">
-          {[
-            {
-              step: "1",
-              icon: MessageSquare,
-              title: "Describe Your Strategy",
-              description: "Tell our AI what you want to achieve using natural language. No complex configurations needed."
-            },
-            {
-              step: "2", 
-              icon: Brain,
-              title: "AI Analysis & Planning",
-              description: "Our AI analyzes your goals, market conditions, and creates an optimized execution plan."
-            },
-            {
-              step: "3",
-              icon: Zap,
-              title: "Automated Execution",
-              description: "Your strategy runs automatically, executing trades when your conditions are perfectly met."
-            }
-          ].map((step, index) => (
-            <Card key={index} className="text-center p-6 border-0 shadow-lg bg-gradient-to-br from-card to-card/50">
-              <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                {step.step}
+        <div className="grid lg:grid-cols-2 gap-8">
+          {/* Intent Creation Form */}
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-card/50">
+            <CardHeader>
+              <CardTitle className="text-2xl flex items-center gap-3">
+                <Plus className="h-6 w-6 text-primary" />
+                Create New Intent
+              </CardTitle>
+              <CardDescription>
+                Fill out the form below to create your automation plan
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Title */}
+                <div className="space-y-2">
+                  <Label htmlFor="title">Title *</Label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => handleInputChange("title", e.target.value)}
+                    placeholder="e.g., Weekly DCA Strategy"
+                    className="modern-input"
+                  />
+                </div>
+
+                {/* Description */}
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description *</Label>
+                  <Textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => handleInputChange("description", e.target.value)}
+                    placeholder="Describe what this automation should do..."
+                    className="modern-input min-h-[100px]"
+                  />
+                </div>
+
+                {/* Action */}
+                <div className="space-y-2">
+                  <Label htmlFor="action">Action *</Label>
+                  <Select value={formData.action} onValueChange={(value) => handleInputChange("action", value)}>
+                    <SelectTrigger className="modern-input">
+                      <SelectValue placeholder="Select an action" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="SWAP">Swap Tokens</SelectItem>
+                      <SelectItem value="STAKE">Stake Tokens</SelectItem>
+                      <SelectItem value="SEND">Send Tokens</SelectItem>
+                      <SelectItem value="REMIND">Set Reminder</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Token */}
+                <div className="space-y-2">
+                  <Label htmlFor="token">Token *</Label>
+                  <Select value={formData.token} onValueChange={(value) => handleInputChange("token", value)}>
+                    <SelectTrigger className="modern-input">
+                      <SelectValue placeholder="Select a token" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="WETH">WETH - Wrapped Ethereum</SelectItem>
+                      <SelectItem value="USDC">USDC - USD Coin</SelectItem>
+                      <SelectItem value="DAI">DAI - Dai Stablecoin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Amount */}
+                <div className="space-y-2">
+                  <Label htmlFor="amount">Amount</Label>
+                  <Input
+                    id="amount"
+                    value={formData.amount}
+                    onChange={(e) => handleInputChange("amount", e.target.value)}
+                    placeholder="e.g., 100"
+                    type="number"
+                    step="0.000001"
+                    className="modern-input"
+                  />
+                </div>
+
+                {/* Frequency */}
+                <div className="space-y-2">
+                  <Label htmlFor="frequency">Frequency *</Label>
+                  <Select value={formData.frequency} onValueChange={(value) => handleInputChange("frequency", value)}>
+                    <SelectTrigger className="modern-input">
+                      <SelectValue placeholder="Select frequency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="DAILY">Daily</SelectItem>
+                      <SelectItem value="WEEKLY">Weekly</SelectItem>
+                      <SelectItem value="MONTHLY">Monthly</SelectItem>
+                      <SelectItem value="CONDITION_BASED">Condition Based</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Target Chain */}
+                <div className="space-y-2">
+                  <Label htmlFor="targetChain">Target Chain</Label>
+                  <Select value={formData.targetChain} onValueChange={(value) => handleInputChange("targetChain", value)}>
+                    <SelectTrigger className="modern-input">
+                      <SelectValue placeholder="Select blockchain" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ethereum">Ethereum</SelectItem>
+                      <SelectItem value="polygon">Polygon</SelectItem>
+                      <SelectItem value="arbitrum">Arbitrum</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Button 
+                  type="submit" 
+                  className="w-full h-12"
+                  disabled={createIntentMutation.isPending}
+                >
+                  {createIntentMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating Intent...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create Intent
+                    </>
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+
+          {/* Strategy Templates */}
+          <div className="space-y-6">
+            {/* Quick Stats */}
+            {stats && (
+              <div className="grid grid-cols-3 gap-4">
+                <Card className="text-center p-4 border-0 shadow-md bg-gradient-to-br from-blue-500/5 to-blue-500/10">
+                  <div className="text-2xl font-bold text-blue-600 mb-1">{stats.totalIntents}</div>
+                  <div className="text-xs text-muted-foreground">Active Strategies</div>
+                </Card>
+                <Card className="text-center p-4 border-0 shadow-md bg-gradient-to-br from-green-500/5 to-green-500/10">
+                  <div className="text-2xl font-bold text-green-600 mb-1">{stats.executedToday}</div>
+                  <div className="text-xs text-muted-foreground">Executed Today</div>
+                </Card>
+                <Card className="text-center p-4 border-0 shadow-md bg-gradient-to-br from-purple-500/5 to-purple-500/10">
+                  <div className="text-2xl font-bold text-purple-600 mb-1">${stats.totalValue}</div>
+                  <div className="text-xs text-muted-foreground">Total Value</div>
+                </Card>
               </div>
-              <step.icon className="h-8 w-8 mx-auto mb-3 text-primary" />
-              <h3 className="text-lg font-semibold mb-2">{step.title}</h3>
-              <p className="text-sm text-muted-foreground">{step.description}</p>
-            </Card>
-          ))}
-        </div>
+            )}
 
-        {/* Quick Stats */}
-        {stats && (
-          <div className="grid md:grid-cols-3 gap-6 mb-12">
-            <Card className="text-center p-6 border-0 shadow-md bg-gradient-to-br from-blue-500/5 to-blue-500/10">
-              <div className="text-3xl font-bold text-blue-600 mb-2">{stats.totalIntents}</div>
-              <div className="text-sm text-muted-foreground">Active Strategies</div>
-            </Card>
-            <Card className="text-center p-6 border-0 shadow-md bg-gradient-to-br from-green-500/5 to-green-500/10">
-              <div className="text-3xl font-bold text-green-600 mb-2">{stats.executedToday}</div>
-              <div className="text-sm text-muted-foreground">Executed Today</div>
-            </Card>
-            <Card className="text-center p-6 border-0 shadow-md bg-gradient-to-br from-purple-500/5 to-purple-500/10">
-              <div className="text-3xl font-bold text-purple-600 mb-2">${stats.totalValue}</div>
-              <div className="text-sm text-muted-foreground">Total Value</div>
-            </Card>
-          </div>
-        )}
-
-        {/* Example Strategies */}
-        <Card className="mb-12 border-0 shadow-lg bg-gradient-to-br from-card to-card/50">
-          <CardHeader>
-            <CardTitle className="text-2xl flex items-center gap-3">
-              <Sparkles className="h-6 w-6 text-primary" />
-              Popular Strategy Templates
-            </CardTitle>
-            <CardDescription>
-              Get started quickly with these proven trading strategies
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4">
-              {exampleStrategies.map((strategy, index) => (
-                <Card key={index} className="p-6 border border-border/50 hover:border-primary/30 transition-all duration-200 cursor-pointer group">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-4 flex-1">
-                      <div className={`w-12 h-12 rounded-xl bg-${strategy.color}-500/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-200`}>
-                        <strategy.icon className={`h-6 w-6 text-${strategy.color}-600`} />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                            {strategy.title}
-                          </h4>
-                          <Badge variant="secondary" className="text-xs">
-                            {strategy.category}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-3">
-                          {strategy.description}
-                        </p>
-                        <div className="flex items-center gap-4">
-                          <Badge variant="outline" className="text-xs">
-                            Est. Cost: {strategy.cost}
-                          </Badge>
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Clock className="h-3 w-3" />
-                            Setup in 2 minutes
+            {/* Strategy Templates */}
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-card/50">
+              <CardHeader>
+                <CardTitle className="text-xl">Popular Strategy Templates</CardTitle>
+                <CardDescription>
+                  Use these templates to get started quickly
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {exampleStrategies.map((strategy, index) => (
+                    <Card key={index} className="p-4 border border-border/50 hover:border-primary/30 transition-all duration-200 cursor-pointer group">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-3 flex-1">
+                          <div className={`w-10 h-10 rounded-lg bg-${strategy.color}-500/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-200`}>
+                            <strategy.icon className={`h-5 w-5 text-${strategy.color}-600`} />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h4 className="font-medium text-sm group-hover:text-primary transition-colors">
+                                {strategy.title}
+                              </h4>
+                              <Badge variant="secondary" className="text-xs">
+                                {strategy.category}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground mb-2">
+                              {strategy.description}
+                            </p>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-xs">
+                                Est. Cost: {strategy.cost}
+                              </Badge>
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Clock className="h-3 w-3" />
+                                Quick setup
+                              </div>
+                            </div>
                           </div>
                         </div>
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity text-xs h-8 px-3"
+                          onClick={() => useTemplate(strategy.template)}
+                        >
+                          Use Template
+                          <ArrowRight className="ml-1 h-3 w-3" />
+                        </Button>
                       </div>
-                    </div>
-                    <Button 
-                      size="sm" 
-                      variant="ghost"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => setShowChat(true)}
-                    >
-                      Use Template
-                      <ArrowRight className="ml-1 h-4 w-4" />
-                    </Button>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* CTA Section */}
-        <Card className="p-8 text-center border-0 shadow-xl bg-gradient-to-br from-primary/5 to-primary/10">
-          <CardContent>
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
-              Ready to Build Your First Strategy?
-            </h2>
-            <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-              Start with a simple idea and let our AI turn it into a sophisticated trading strategy. 
-              No coding required, just describe what you want to achieve.
-            </p>
-            <Button 
-              onClick={() => setShowChat(true)}
-              size="lg" 
-              className="h-12 px-8"
-            >
-              <Bot className="mr-2 h-5 w-5" />
-              Start with AI Assistant
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Chat Modal */}
-        {showChat && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-card rounded-2xl border border-border w-full max-w-4xl max-h-[80vh] shadow-2xl">
-              <PlannerChat onClose={() => setShowChat(false)} />
-            </div>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
