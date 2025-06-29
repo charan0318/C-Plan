@@ -50,7 +50,7 @@ export function WalletConnect() {
     return (
       <Button
         onClick={handleDisconnect}
-        className="bg-accent hover:bg-accent/90 text-white"
+        className="bg-green-600 hover:bg-green-700 text-white"
       >
         <Wallet size={16} className="mr-2" />
         {formatAddress(address)}

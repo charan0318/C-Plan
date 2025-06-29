@@ -49,6 +49,17 @@ export function useWallet() {
     }
   });
 
+  // Disconnect wallet mutation
+  const disconnectWalletMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/wallet/disconnect", {});
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wallet/connections"] });
+    }
+  });
+
   const connectWallet = async () => {
     setWalletState(prev => ({ ...prev, isConnecting: true }));
     
@@ -144,11 +155,21 @@ export function useWallet() {
     }
   };
 
-  const disconnectWallet = () => {
-    setWalletState({
-      isConnected: false,
-      isConnecting: false
-    });
+  const disconnectWallet = async () => {
+    try {
+      await disconnectWalletMutation.mutateAsync();
+      setWalletState({
+        isConnected: false,
+        isConnecting: false
+      });
+    } catch (error) {
+      console.error("Disconnect error:", error);
+      // Still disconnect locally even if server call fails
+      setWalletState({
+        isConnected: false,
+        isConnecting: false
+      });
+    }
   };
 
   // Listen for account changes
@@ -181,7 +202,7 @@ export function useWallet() {
   // Initialize from existing connections
   useEffect(() => {
     const activeConnection = connections.find(conn => conn.isActive);
-    if (activeConnection && !walletState.isConnected) {
+    if (activeConnection && !walletState.isConnected && !walletState.isConnecting) {
       setWalletState(prev => ({
         ...prev,
         isConnected: true,
@@ -190,7 +211,7 @@ export function useWallet() {
         isConnecting: false
       }));
     }
-  }, [connections, walletState.isConnected]);
+  }, [connections, walletState.isConnected, walletState.isConnecting]);
 
   return {
     ...walletState,

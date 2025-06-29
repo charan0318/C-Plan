@@ -16,19 +16,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create wallet connection
+  // Connect wallet
   app.post("/api/wallet/connect", async (req, res) => {
     try {
       const { walletAddress, chainId } = req.body;
-      const connection = await storage.createWalletConnection({
+
+      if (!walletAddress || !chainId) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      // For now, create a simple connection record
+      const connection = {
+        id: Date.now(),
         userId: 1, // Mock user ID
         walletAddress,
         chainId,
-        isActive: true
-      });
+        isActive: true,
+        createdAt: new Date()
+      };
+
+      // Store in memory (in production, use a database)
+      let mockConnections: any[] = []; // define mockConnections
+
+      mockConnections = mockConnections.filter(conn => conn.userId === 1);
+      mockConnections.push(connection);
+
       res.json(connection);
     } catch (error) {
+      console.error("Connect wallet error:", error);
       res.status(500).json({ error: "Failed to connect wallet" });
+    }
+  });
+
+  // Disconnect wallet
+  app.post("/api/wallet/disconnect", async (req, res) => {
+    try {
+      let mockConnections: any[] = []; // define mockConnections
+      // Remove all connections for the user
+      mockConnections = mockConnections.filter(conn => conn.userId !== 1);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Disconnect wallet error:", error);
+      res.status(500).json({ error: "Failed to disconnect wallet" });
     }
   });
 
