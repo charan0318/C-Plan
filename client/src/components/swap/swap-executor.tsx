@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,7 +18,7 @@ export function SwapExecutor() {
   const [slippage, setSlippage] = useState<string>("200"); // 2%
   const [txStatus, setTxStatus] = useState<'idle' | 'pending' | 'success' | 'error'>('idle');
   const [txHash, setTxHash] = useState<string>("");
-  
+
   const { executeSwap, isExecutingSwap, tokenBalances } = useContract();
   const { provider } = useWallet();
   const { toast } = useToast();
@@ -42,7 +41,7 @@ export function SwapExecutor() {
     // Validate token balance
     const availableBalance = parseFloat(getContractBalance(tokenIn));
     const requestedAmount = parseFloat(amountIn);
-    
+
     if (requestedAmount > availableBalance) {
       toast({
         title: "Insufficient Balance",
@@ -54,7 +53,7 @@ export function SwapExecutor() {
 
     try {
       setTxStatus('pending');
-      
+
       const result = await executeSwap({
         tokenIn,
         amountIn,
@@ -63,7 +62,7 @@ export function SwapExecutor() {
       });
 
       setTxHash(result.hash);
-      
+
       // Wait for transaction confirmation
       if (provider) {
         toast({
@@ -72,7 +71,7 @@ export function SwapExecutor() {
         });
 
         const receipt = await provider.waitForTransaction(result.hash);
-        
+
         if (receipt?.status === 1) {
           setTxStatus('success');
           toast({
@@ -91,7 +90,7 @@ export function SwapExecutor() {
     } catch (error: any) {
       setTxStatus('error');
       let errorMessage = "Failed to execute swap";
-      
+
       if (error.message.includes("INVALID_PATH")) {
         errorMessage = "Invalid swap path - this token pair may not be supported on Sepolia testnet";
       } else if (error.message.includes("INSUFFICIENT_LIQUIDITY")) {
@@ -99,13 +98,13 @@ export function SwapExecutor() {
       } else if (error.message.includes("execution reverted")) {
         errorMessage = "Swap failed - check token balances and try again";
       }
-      
+
       toast({
         title: "Swap Failed",
         description: errorMessage,
         variant: "destructive",
       });
-      
+
       console.error("Swap error:", error);
     }
   };
@@ -126,6 +125,14 @@ export function SwapExecutor() {
     const num = parseFloat(balance);
     if (num < 0.001) return '< 0.001';
     return num.toFixed(4);
+  };
+
+  // Placeholder function for test DCA swap - implement actual logic in contract hook
+  const handleTestDCASwap = async () => {
+    toast({
+      title: "Test DCA Swap",
+      description: "This function is not implemented yet.  Check back soon!",
+    });
   };
 
   return (
@@ -155,7 +162,7 @@ export function SwapExecutor() {
               ))}
             </SelectContent>
           </Select>
-          
+
           {tokenIn && (
             <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <span className="text-sm text-gray-600 dark:text-gray-400">Available:</span>
@@ -240,14 +247,14 @@ export function SwapExecutor() {
               {txStatus === 'error' && <AlertCircle className="h-4 w-4 text-red-600" />}
               <span className="font-medium capitalize">{txStatus}</span>
             </div>
-            
+
             {txStatus === 'pending' && (
               <div className="space-y-2">
                 <Progress value={50} className="w-full" />
                 <p className="text-sm text-gray-600">Processing swap transaction...</p>
               </div>
             )}
-            
+
             {txHash && (
               <div className="space-y-1">
                 <p className="text-sm font-medium">Transaction Hash:</p>
@@ -291,6 +298,39 @@ export function SwapExecutor() {
             New Swap
           </Button>
         )}
+
+        <div className="space-y-3">
+          <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-green-800 dark:text-green-200">Test DCA Functionality</span>
+              <Button
+                onClick={handleTestDCASwap}
+                disabled={isExecutingSwap || parseFloat(getContractBalance('USDC')) < 0.5}
+                size="sm"
+                variant="outline"
+                className="bg-green-50 border-green-300"
+              >
+                {isExecutingSwap ? (
+                  <>
+                    <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                    Swapping...
+                  </>
+                ) : (
+                  "Swap 0.5 USDC → WETH"
+                )}
+              </Button>
+            </div>
+            <p className="text-xs text-green-700 dark:text-green-300">
+              Test your DCA setup by swapping some USDC for WETH
+            </p>
+          </div>
+
+          <div className="text-xs text-gray-500 space-y-1">
+            <p>• Swaps happen within the smart contract</p>
+            <p>• Earned tokens appear in "Contract Balances"</p>
+            <p>• Use withdraw to move tokens to your wallet</p>
+          </div>
+        </div>
 
         <div className="text-xs text-gray-500 space-y-1">
           <p>• ⚠️ Limited token pairs available on Sepolia testnet</p>
