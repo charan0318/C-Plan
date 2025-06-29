@@ -14,7 +14,7 @@ export function TokenDeposit() {
   const [amount, setAmount] = useState<string>("");
   const [isApproving, setIsApproving] = useState(false);
 
-  const { depositToken, isDepositingToken, tokenBalances, withdrawToken, isWithdrawingToken } = useContract();
+  const { depositToken, isDepositingToken, tokenBalances, withdrawToken, isWithdrawingToken, convertEthToWeth, isConvertingEthToWeth } = useContract();
   const { toast } = useToast();
 
   const supportedTokens = [
@@ -64,6 +64,14 @@ export function TokenDeposit() {
       console.error("Withdraw error:", error);
     } finally {
       setIsApproving(false);
+    }
+  };
+
+  const handleConvertEthToWeth = async () => {
+    try {
+      await convertEthToWeth({ amount: "0.001" });
+    } catch (error: any) {
+      console.error("Conversion error:", error);
     }
   };
 
@@ -218,6 +226,30 @@ export function TokenDeposit() {
               </>
             )}
           </Button>
+        </div>
+
+        <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium">Quick ETH to WETH Conversion</span>
+            <Button
+              onClick={handleConvertEthToWeth}
+              disabled={isConvertingEthToWeth}
+              size="sm"
+              variant="outline"
+            >
+              {isConvertingEthToWeth ? (
+                <>
+                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                  Converting...
+                </>
+              ) : (
+                "Convert 0.001 ETH → WETH"
+              )}
+            </Button>
+          </div>
+          <p className="text-xs text-gray-600 dark:text-gray-400">
+            Convert ETH to WETH for testing swaps and deposits
+          </p>
         </div>
 
         <div className="text-xs text-gray-500 space-y-1">

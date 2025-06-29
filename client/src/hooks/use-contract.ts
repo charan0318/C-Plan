@@ -112,9 +112,25 @@ export function useContract() {
   // Execute intent mutation
   const executeIntentMutation = useMutation({
     mutationFn: async (intentId: number) => {
-      const contract = getContractInstance();
+      if (!walletState.provider || !signer) {
+        throw new Error("Wallet not connected");
+      }
 
-      const tx = await contract.executeIntent(intentId);
+      // For ETH to WETH conversion, we need to interact with WETH contract directly
+      // Since our contract doesn't handle ETH wrapping yet
+      const wethAddress = TOKENS.WETH;
+      const wethContract = new ethers.Contract(
+        wethAddress,
+        [
+          'function deposit() external payable',
+          'function balanceOf(address) external view returns (uint256)'
+        ],
+        signer
+      );
+
+      // Convert 0.001 ETH to WETH
+      const ethAmount = ethers.parseEther("0.001");
+      const tx = await wethContract.deposit({ value: ethAmount });
       const receipt = await tx.wait();
 
       return { tx, receipt };
@@ -122,6 +138,18 @@ export function useContract() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-intents'] });
       queryClient.invalidateQueries({ queryKey: ['nft-balance'] });
+      queryClient.invalidateQueries({ queryKey: ['token-balances'] });
+      toast({
+        title: "Intent Executed",
+        description: "ETH has been converted to WETH successfully!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Execution Failed",
+        description: error.message || "Failed to execute intent",
+        variant: "destructive",
+      });
     }
   });
 
@@ -292,6 +320,43 @@ export function useContract() {
     }
   });
 
+  // Convert ETH to WETH directly
+  const convertEthToWethMutation = useMutation({
+    mutationFn: async ({ amount }: { amount: string }) => {
+      if (!signer) throw new Error("Wallet not connected");
+
+      const wethAddress = TOKENS.WETH;
+      const wethContract = new ethers.Contract(
+        wethAddress,
+        [
+          'function deposit() external payable',
+          'function balanceOf(address) external view returns (uint256)'
+        ],
+        signer
+      );
+
+      const ethAmount = ethers.parseEther(amount);
+      const tx = await wethContract.deposit({ value: ethAmount });
+      const receipt = await tx.wait();
+
+      return { tx, receipt };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['token-balances'] });
+      toast({
+        title: "ETH Converted",
+        description: "ETH has been successfully converted to WETH!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Conversion Failed",
+        description: error.message || "Failed to convert ETH to WETH",
+        variant: "destructive",
+      });
+    }
+  });
+
   // Execute swap with real-time confirmation
   const executeSwapMutation = useMutation({
     mutationFn: async ({ 
@@ -362,11 +427,13 @@ export function useContract() {
     depositToken: depositTokenMutation.mutateAsync,
     withdrawToken: withdrawTokenMutation.mutateAsync,
     executeSwap: executeSwapMutation.mutateAsync,
+    convertEthToWeth: convertEthToWethMutation.mutateAsync,
     isCreatingIntent: createIntentMutation.isPending,
     isExecutingIntent: executeIntentMutation.isPending,
     isDepositingToken: depositTokenMutation.isPending,
     isWithdrawingToken: withdrawTokenMutation.isPending,
     isExecutingSwap: executeSwapMutation.isPending,
+    isConvertingEthToWeth: convertEthToWethMutation.isPending,
     contractAddress: CONTRACT_CONFIG.address,
     isContractDeployed
   };
