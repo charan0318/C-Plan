@@ -58,11 +58,8 @@ export function useWallet() {
         const network = await provider.getNetwork();
         const chainId = Number(network.chainId);
 
-        // Check if we're on Sepolia testnet
-        const network = await provider.getNetwork();
-        const currentChainId = Number(network.chainId);
-        
-        if (currentChainId !== 11155111) {
+        // Check if we're on Sepolia testnet (11155111)
+        if (chainId !== 11155111) {
           try {
             // Try to switch to Sepolia
             await window.ethereum.request({
@@ -77,7 +74,7 @@ export function useWallet() {
                 params: [{
                   chainId: '0xaa36a7',
                   chainName: 'Sepolia Test Network',
-                  rpcUrls: ['https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161'],
+                  rpcUrls: ['https://eth-sepolia.g.alchemy.com/v2/demo', 'https://sepolia.infura.io/v3/'],
                   blockExplorerUrls: ['https://sepolia.etherscan.io/'],
                   nativeCurrency: {
                     name: 'Sepolia ETH',

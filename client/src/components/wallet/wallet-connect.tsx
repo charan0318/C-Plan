@@ -17,11 +17,22 @@ export function WalletConnect() {
       });
     } catch (error: any) {
       console.error("Wallet connection error:", error);
+      
+      let errorMessage = "Failed to connect wallet. Please ensure you have MetaMask installed and try again.";
+      
+      if (error?.message?.includes("User rejected") || error?.code === 4001) {
+        errorMessage = "Connection was rejected by user";
+      } else if (error?.message?.includes("No provider") || !window.ethereum) {
+        errorMessage = "Please install MetaMask to connect your wallet";
+      } else if (error?.code === 4902) {
+        errorMessage = "Failed to add Sepolia network. Please add it manually.";
+      } else if (error?.code === -32002) {
+        errorMessage = "Connection request is pending. Please check MetaMask.";
+      }
+      
       toast({
         title: "Connection Failed",
-        description: error?.message?.includes("User rejected") 
-          ? "Connection was rejected by user" 
-          : "Failed to connect wallet. Please ensure you have MetaMask installed and try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
