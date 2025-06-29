@@ -150,9 +150,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Estimate cost (mock calculation)
       const estimatedCost = Math.floor(Math.random() * 100) + 10; // $10-$110
 
-      // Create database entry
-      const newIntent = {
-        id: Date.now(),
+      // Create database entry using proper storage method
+      const newIntent = await storage.createIntent({
         userId,
         walletAddress,
         title,
@@ -164,16 +163,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         conditions: elizaParsed?.condition || conditions,
         targetChain,
         isActive: true,
-        contractIntentId: null, // Will be set after blockchain confirmation
-        elizaParsed: elizaParsed,
-        estimatedCost: estimatedCost,
-        status: 'pending_blockchain',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-
-      if (!storage.intents) storage.intents = [];
-      storage.intents.push(newIntent);
+        nextExecution: null,
+        lastExecution: null
+      });
 
       // Simulate blockchain interaction (in production, use actual contract calls)
       setTimeout(async () => {
@@ -182,25 +174,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const functionsAnalysis = await simulateChainlinkFunctions(intentDescription, estimatedCost, walletAddress);
 
           // Update intent with blockchain confirmation
-          const intentIndex = storage.intents.findIndex(i => i.id === newIntent.id);
-          if (intentIndex !== -1) {
-            storage.intents[intentIndex].contractIntentId = Math.floor(Math.random() * 1000);
-            storage.intents[intentIndex].status = functionsAnalysis.feasible ? 'active' : 'validation_failed';
-            storage.intents[intentIndex].functionsAnalysis = functionsAnalysis;
-            storage.intents[intentIndex].updatedAt = new Date();
+          await storage.updateIntent(newIntent.id, {
+            status: functionsAnalysis.feasible ? 'active' : 'validation_failed'
+          });
 
-            // Add execution history entry
-            const executionEntry = {
-              id: Date.now(),
-              intentId: newIntent.id,
-              status: functionsAnalysis.feasible ? 'SUCCESS' : 'FAILED',
-              result: `Intent ${functionsAnalysis.feasible ? 'validated and scheduled' : 'validation failed'}: ${functionsAnalysis.confidence}% confidence`,
-              executedAt: new Date()
-            };
-
-            if (!storage.executionHistory) storage.executionHistory = [];
-            storage.executionHistory.push(executionEntry);
-          }
+          // Add execution history entry
+          await storage.createExecutionHistory({
+            intentId: newIntent.id,
+            status: functionsAnalysis.feasible ? 'SUCCESS' : 'FAILED',
+            result: `Intent ${functionsAnalysis.feasible ? 'validated and scheduled' : 'validation failed'}: ${functionsAnalysis.confidence}% confidence`
+          });
         } catch (error) {
           console.error('Blockchain simulation error:', error);
         }
@@ -320,7 +303,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/intents/:id/execute', async (req, res) => {
     try {
       const intentId = parseInt(req.params.id);
-      const intent = storage.intents.find(i => i.id === intentId);
+      const intent = await storage.getIntent(intentId);
 
       if (!intent) {
         return res.status(404).json({ error: 'Intent not found' });
@@ -353,31 +336,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       // Add to execution history
-      if (!storage.executionHistory) storage.executionHistory = [];
-      storage.executionHistory.push(executionResult);
+      await storage.createExecutionHistory({
+        intentId: intentId,
+        status: executionResult.status,
+        result: executionResult.result,
+        gasUsed: executionResult.gasUsed,
+        transactionHash: executionResult.transactionHash
+      });
 
       // Update intent last execution
-      const intentIndex = storage.intents.findIndex(i => i.id === intentId);
-      if (intentIndex !== -1) {
-        storage.intents[intentIndex].lastExecution = new Date();
-        storage.intents[intentIndex].updatedAt = new Date();
-
-        // Calculate next execution for recurring tasks
-        if (intent.frequency !== 'once') {
-          storage.intents[intentIndex].nextExecution = calculateNextExecution(intent);
-        }
-      }
-
-      // Simulate NFT minting (WalletPlanner contract executeIntent)
-      const nftToken = {
-        tokenId: Math.floor(Math.random() * 10000),
-        owner: intent.walletAddress,
-        intentId: intentId,
-        mintedAt: new Date()
+      const updateData: any = {
+        lastExecution: new Date()
       };
 
-      if (!storage.nftTokens) storage.nftTokens = [];
-      storage.nftTokens.push(nftToken);
+      // Calculate next execution for recurring tasks
+      if (intent.frequency !== 'once') {
+        updateData.nextExecution = calculateNextExecution(intent);
+      }
+
+      await storage.updateIntent(intentId, updateData);
 
       res.json({
         executed: true,
@@ -392,34 +369,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get dashboard stats
-  app.get('/api/dashboard/stats', (req, res) => {
-    // Ensure storage.intents is an array
-    if (!Array.isArray(storage.intents)) {
-      storage.intents = [];
+  app.get('/api/dashboard/stats', async (req, res) => {
+    try {
+      const userId = 1; // Mock user ID for demo
+      const intents = await storage.getIntents(userId);
+      
+      const activePlans = intents.filter(i => i.isActive).length;
+      const today = new Date().toDateString();
+
+      // Get all execution history and filter for today
+      const allExecutionHistory = await Promise.all(
+        intents.map(intent => storage.getExecutionHistory(intent.id))
+      ).then(histories => histories.flat());
+
+      const executedToday = allExecutionHistory.filter(e => 
+        e.status === 'SUCCESS' && new Date(e.executedAt!).toDateString() === today
+      ).length;
+
+      const totalValue = intents.reduce((sum, intent) => {
+        return sum + (parseFloat(intent.amount || '0') || 0);
+      }, 0);
+
+      res.json({
+        activePlans,
+        executedToday,
+        totalValue: totalValue.toString(),
+        gasSaved: "12.5" // Mock gas savings
+      });
+    } catch (error) {
+      console.error("Dashboard stats error:", error);
+      res.status(500).json({ error: "Failed to fetch dashboard stats" });
     }
-
-    const activePlans = storage.intents.filter(i => i.isActive).length;
-    const today = new Date().toDateString();
-
-    // Ensure storage.executionHistory is an array
-    if (!Array.isArray(storage.executionHistory)) {
-      storage.executionHistory = [];
-    }
-
-    const executedToday = storage.executionHistory.filter(e => 
-      e.status === 'SUCCESS' && new Date(e.executedAt).toDateString() === today
-    ).length;
-
-    const totalValue = storage.intents.reduce((sum, intent) => {
-      return sum + (parseFloat(intent.amount) || 0);
-    }, 0);
-
-    res.json({
-      activePlans,
-      executedToday,
-      totalValue: totalValue.toString(),
-      gasSaved: "12.5" // Mock gas savings
-    });
   });
 
   // Get NFT tokens
@@ -507,22 +487,13 @@ function checkExecutionConditions(intent) {
   const now = new Date();
 
   // Check frequency-based scheduling
-  if (intent.frequency === 'daily') {
-    if (intent.lastExecution && (now - new Date(intent.lastExecution)) < 24 * 60 * 60 * 1000) {
+  if (intent.frequency === 'DAILY') {
+    if (intent.lastExecution && (now.getTime() - new Date(intent.lastExecution).getTime()) < 24 * 60 * 60 * 1000) {
       return { canExecute: false, reason: 'Daily frequency not met', nextCheck: '24 hours' };
     }
-  } else if (intent.frequency === 'weekly') {
-    if (intent.lastExecution && (now - new Date(intent.lastExecution)) < 7 * 24 * 60 * 60 * 1000) {
+  } else if (intent.frequency === 'WEEKLY') {
+    if (intent.lastExecution && (now.getTime() - new Date(intent.lastExecution).getTime()) < 7 * 24 * 60 * 60 * 1000) {
       return { canExecute: false, reason: 'Weekly frequency not met', nextCheck: '7 days' };
-    }
-
-    // Check specific day if specified
-    if (intent.elizaParsed?.day) {
-      const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-      const targetDay = dayNames.indexOf(intent.elizaParsed.day.toLowerCase());
-      if (now.getDay() !== targetDay) {
-        return { canExecute: false, reason: `Waiting for ${intent.elizaParsed.day}`, nextCheck: `Next ${intent.elizaParsed.day}` };
-      }
     }
   }
 
