@@ -5,21 +5,64 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useWallet } from "@/hooks/use-wallet";
+import { useToast } from "@/hooks/use-toast";
 import { formatAddress } from "@/lib/wallet";
 import { SUPPORTED_CHAINS } from "@/types/wallet";
-import { Wallet, Network, Settings as SettingsIcon } from "lucide-react";
+import { Wallet, Network, Settings as SettingsIcon, Loader2, Power } from "lucide-react";
 import type { WalletConnection } from "@/types/wallet";
 
 export default function Settings() {
   const [debugMode, setDebugMode] = useState(false);
   const [testNetwork, setTestNetwork] = useState(true);
-  const { isConnected, address, disconnectWallet } = useWallet();
+  const [isConnecting, setIsConnecting] = useState(false);
+  
+  const { isConnected, address, chainId, connectWallet, disconnectWallet } = useWallet();
+  const { toast } = useToast();
 
   const { data: connections = [] } = useQuery<WalletConnection[]>({
     queryKey: ["/api/wallet/connections"],
   });
 
   const activeConnection = connections.find(conn => conn.isActive);
+
+  const handleConnect = async () => {
+    if (!connectWallet) return;
+    
+    setIsConnecting(true);
+    try {
+      await connectWallet();
+      toast({
+        title: "Wallet Connected",
+        description: "Successfully connected to your wallet!",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Connection Failed",
+        description: error.message || "Failed to connect wallet",
+        variant: "destructive",
+      });
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    if (!disconnectWallet) return;
+    
+    try {
+      await disconnectWallet();
+      toast({
+        title: "Wallet Disconnected",
+        description: "Your wallet has been disconnected",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Disconnect Failed", 
+        description: error.message || "Failed to disconnect wallet",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="py-20">
@@ -44,43 +87,67 @@ export default function Settings() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {isConnected && activeConnection ? (
-                  <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                        <Wallet className="text-primary" size={20} />
-                      </div>
-                      <div>
-                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                          MetaMask
+                {isConnected && address ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                          <Wallet className="text-primary" size={20} />
                         </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400 font-mono">
-                          {formatAddress(activeConnection.walletAddress)}
+                        <div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                            MetaMask
+                          </div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400 font-mono">
+                            {formatAddress(address)}
+                          </div>
+                          {chainId && (
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              Chain: {chainId === 11155111 ? 'Sepolia Testnet' : `Chain ${chainId}`}
+                            </div>
+                          )}
                         </div>
                       </div>
+                      <Badge variant="secondary" className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+                        <div className="w-2 h-2 bg-green-500 rounded-full mr-1" />
+                        Connected
+                      </Badge>
                     </div>
-                    <Badge variant="secondary" className="bg-accent/10 text-accent">
-                      <div className="w-2 h-2 bg-accent rounded-full mr-1" />
-                      Connected
-                    </Badge>
+                    <Button 
+                      onClick={handleDisconnect}
+                      variant="outline"
+                      className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Power size={16} className="mr-2" />
+                      Disconnect Wallet
+                    </Button>
                   </div>
                 ) : (
-                  <div className="text-center py-8">
-                    <Wallet className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600 dark:text-gray-400">
-                      No wallet connected. Connect your wallet to start using C-PLAN.
-                    </p>
+                  <div className="space-y-4">
+                    <div className="text-center py-8">
+                      <Wallet className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-600 dark:text-gray-400">
+                        No wallet connected. Connect your wallet to start using C-PLAN.
+                      </p>
+                    </div>
+                    <Button 
+                      onClick={handleConnect}
+                      disabled={isConnecting}
+                      className="w-full bg-primary hover:bg-primary-dark"
+                    >
+                      {isConnecting ? (
+                        <>
+                          <Loader2 size={16} className="mr-2 animate-spin" />
+                          Connecting...
+                        </>
+                      ) : (
+                        <>
+                          <Wallet size={16} className="mr-2" />
+                          Connect Wallet
+                        </>
+                      )}
+                    </Button>
                   </div>
-                )}
-
-                {isConnected && (
-                  <Button 
-                    onClick={disconnectWallet}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    Disconnect Wallet
-                  </Button>
                 )}
               </div>
             </CardContent>
@@ -116,7 +183,7 @@ export default function Settings() {
                       )}
                     </div>
                     <span className="text-sm text-accent">
-                      {activeConnection?.chainId === chain.id ? "Active" : "Available"}
+                      {chainId === chain.id ? "Active" : "Available"}
                     </span>
                   </div>
                 ))}
