@@ -8,17 +8,18 @@ import { useToast } from "./use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
 export function useContract() {
-  const { signer, address, isConnected } = useWallet();
+  const walletState = useWallet();
+  const { signer, address, isConnected } = walletState;
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isTransactionPending, setIsTransactionPending] = useState(false);
 
   // Get contract instance
   const getContractInstance = () => {
-    if (!provider || !signer) {
+    if (!walletState.provider || !signer) {
       throw new Error("Wallet not connected");
     }
-    return getContract(provider, signer);
+    return getContract(walletState.provider, signer);
   };
 
   // Create intent mutation
@@ -91,9 +92,9 @@ export function useContract() {
   const { data: userIntents = [], isLoading: isLoadingIntents } = useQuery({
     queryKey: ['user-intents', address],
     queryFn: async (): Promise<Intent[]> => {
-      if (!provider || !address) return [];
+      if (!walletState.provider || !address) return [];
 
-      const contract = getContract(provider);
+      const contract = getContract(walletState.provider);
       const intentIds = await contract.getUserIntents(address);
 
       const intents = await Promise.all(
@@ -112,20 +113,20 @@ export function useContract() {
 
       return intents;
     },
-    enabled: isConnected && !!address && CONTRACT_CONFIG.address !== "0x0000000000000000000000000000000000000000"
+    enabled: isConnected && !!address && !!walletState.provider && CONTRACT_CONFIG.address !== "0x0000000000000000000000000000000000000000"
   });
 
   // Get NFT balance query
   const { data: nftBalance = 0 } = useQuery({
     queryKey: ['nft-balance', address],
     queryFn: async (): Promise<number> => {
-      if (!provider || !address) return 0;
+      if (!walletState.provider || !address) return 0;
 
-      const contract = getContract(provider);
+      const contract = getContract(walletState.provider);
       const balance = await contract.balanceOf(address);
       return Number(balance);
     },
-    enabled: isConnected && !!address && CONTRACT_CONFIG.address !== "0x0000000000000000000000000000000000000000"
+    enabled: isConnected && !!address && !!walletState.provider && CONTRACT_CONFIG.address !== "0x0000000000000000000000000000000000000000"
   });
 
   return {
