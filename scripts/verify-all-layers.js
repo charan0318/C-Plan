@@ -1,5 +1,5 @@
 
-import { elizaService } from '../server/elizaService.js';
+import { elizaService } from '../server/elizaService.ts';
 
 async function verifyAllLayers() {
   console.log("🚀 C-PLAN SYSTEM VERIFICATION\n");
@@ -61,7 +61,7 @@ async function verifyAllLayers() {
   console.log("⏰ Testing Automation (Chainlink Upkeep)...");
   try {
     // Check if automation contract methods exist
-    const fs = require('fs');
+    const fs = await import('fs');
     const contractPath = './contracts/WalletPlanner.sol';
 
     if (fs.existsSync(contractPath)) {
@@ -92,7 +92,7 @@ async function verifyAllLayers() {
   // 4. 📜 Smart Contract (WalletPlanner)
   console.log("📜 Testing Smart Contract (WalletPlanner)...");
   try {
-    const fs = require('fs');
+    const fs = await import('fs');
     const artifactPath = './artifacts/contracts/WalletPlanner.sol/WalletPlanner.json';
 
     if (fs.existsSync(artifactPath)) {
@@ -125,7 +125,7 @@ async function verifyAllLayers() {
   // 5. 💻 Frontend (Replit)
   console.log("💻 Testing Frontend (Replit)...");
   try {
-    const fs = require('fs');
+    const fs = await import('fs');
     const frontendFiles = [
       './client/src/pages/dashboard.tsx',
       './client/src/pages/planner.tsx',
