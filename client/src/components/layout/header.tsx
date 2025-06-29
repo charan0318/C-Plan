@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { WalletConnect } from "@/components/wallet/wallet-connect";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
@@ -43,7 +44,8 @@ export default function Header() {
           ))}
         </nav>
 
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2">
+          <ThemeToggle />
           <WalletConnect />
           
           {/* Mobile menu button */}

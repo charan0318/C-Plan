@@ -25,7 +25,14 @@ export function useWallet() {
   // Fetch wallet connections
   const { data: connections = [] } = useQuery<WalletConnection[]>({
     queryKey: ["/api/wallet/connections"],
-    enabled: true
+    queryFn: async () => {
+      const response = await fetch("/api/wallet/connections");
+      if (!response.ok) throw new Error("Failed to fetch wallet connections");
+      return response.json();
+    },
+    enabled: true,
+    retry: 1,
+    staleTime: 5 * 60 * 1000
   });
 
   // Connect wallet mutation
