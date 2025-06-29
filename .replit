@@ -62,3 +62,12 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "node scripts/simulate-automation.js"
+
+[[workflows.workflow]]
+name = "Deploy to Sepolia"
+author = 18632091
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node scripts/deploy-production.js"

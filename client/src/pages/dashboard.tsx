@@ -158,15 +158,15 @@ export default function Dashboard() {
 
   const [executingIntentId, setExecutingIntentId] = useState<number | null>(null);
 
-  const { data: stats = { executedToday: 0 } } = useQuery({
+  const { data: stats = { executedToday: 0, totalIntents: 0, activeIntents: 0 } } = useQuery({
     queryKey: ["/api/dashboard/stats"],
     queryFn: async () => {
       try {
         const response = await fetch("/api/dashboard/stats");
-        if (!response.ok) return { executedToday: 0 };
+        if (!response.ok) return { executedToday: 0, totalIntents: 0, activeIntents: 0 };
         return response.json();
       } catch (error) {
-        return { executedToday: 0 };
+        return { executedToday: 0, totalIntents: 0, activeIntents: 0 };
       }
     }
   });
@@ -263,7 +263,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {stats ? stats.total : userIntents.length}
+                {isLoadingIntents ? "..." : userIntents.length}
               </div>
             </CardContent>
           </Card>
@@ -287,7 +287,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {stats ? stats.executedToday : "..."}
+                {stats.executedToday}
               </div>
             </CardContent>
           </Card>
