@@ -167,7 +167,7 @@ export default function Docs() {
                   AI-powered system handles the complex blockchain interactions automatically.
                 </p>
                 <p>
-                  Built for the Chainlink Hackathon 2024, C-PLAN leverages cutting-edge decentralized infrastructure 
+                  Built for the Chainlink Hackathon 2025, C-PLAN leverages cutting-edge decentralized infrastructure 
                   including Chainlink Automation, Functions, and ElizaOS agents to provide reliable, secure, and 
                   transparent automation for your crypto assets.
                 </p>
