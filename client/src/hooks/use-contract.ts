@@ -220,46 +220,50 @@ export function useContract() {
     queryFn: async () => {
       if (!walletState.provider || !address) return {};
 
-      console.log('Fetching token balances for address:', address);
+      console.log('🔄 Fetching token balances for address:', address);
       const balances: Record<string, string> = {};
 
       // Get ETH balance
       try {
         const ethBalance = await walletState.provider.getBalance(address);
         balances.ETH = ethers.formatEther(ethBalance);
-        console.log('ETH balance fetched:', balances.ETH);
+        console.log('✅ ETH balance fetched:', balances.ETH);
       } catch (error) {
-        console.error('Error fetching ETH balance:', error);
+        console.error('❌ Error fetching ETH balance:', error);
         balances.ETH = '0';
       }
 
-      // Get deposited balances from smart contract if available
+      // Get deposited balances from smart contract if available (these are the balances used for DCA)
       if (isContractDeployed) {
         try {
           const contract = getContract(walletState.provider);
+          console.log('📋 Fetching deposited balances from contract...');
+          
           for (const [symbol, tokenAddress] of Object.entries(TOKENS)) {
             try {
               const depositedBalance = await contract.getUserBalance(address, tokenAddress);
-              balances[`${symbol}_DEPOSITED`] = ethers.formatEther(depositedBalance);
-              console.log(`${symbol} deposited balance:`, balances[`${symbol}_DEPOSITED`]);
+              // Use proper decimals for each token
+              const decimals = symbol === 'USDC' ? 6 : 18;
+              balances[`${symbol}_DEPOSITED`] = ethers.formatUnits(depositedBalance, decimals);
+              console.log(`📊 ${symbol} deposited balance: ${balances[`${symbol}_DEPOSITED`]} (raw: ${depositedBalance.toString()})`);
             } catch (error) {
-              console.error(`Error fetching ${symbol} deposited balance:`, error);
+              console.error(`❌ Error fetching ${symbol} deposited balance:`, error);
               balances[`${symbol}_DEPOSITED`] = '0';
             }
           }
         } catch (error) {
-          console.error('Error fetching deposited balances from contract:', error);
+          console.error('❌ Error fetching deposited balances from contract:', error);
         }
       }
 
-      // Get token balances directly from token contracts with proper decimals
+      // Get wallet token balances directly from token contracts
       for (const [symbol, tokenAddress] of Object.entries(TOKENS)) {
         try {
-          console.log(`Fetching ${symbol} balance from contract:`, tokenAddress);
+          console.log(`🔍 Fetching ${symbol} wallet balance from contract:`, tokenAddress);
 
           // Validate token address format
           if (!tokenAddress || tokenAddress.length !== 42 || !tokenAddress.startsWith('0x')) {
-            console.error(`Invalid token address for ${symbol}:`, tokenAddress);
+            console.error(`❌ Invalid token address for ${symbol}:`, tokenAddress);
             balances[symbol] = '0';
             continue;
           }
@@ -275,89 +279,62 @@ export function useContract() {
             walletState.provider
           );
 
-          // For WETH, add additional verification
-          if (symbol === 'WETH') {
+          // Get balance and decimals with retries for better reliability
+          let balance, decimals;
+          let attempts = 0;
+          const maxAttempts = 3;
+
+          while (attempts < maxAttempts) {
             try {
-              // Verify this is actually a WETH contract
-              const wethContract = new ethers.Contract(
-                tokenAddress,
-                [
-                  'function balanceOf(address) external view returns (uint256)',
-                  'function decimals() external view returns (uint8)',
-                  'function name() external view returns (string)',
-                  'function symbol() external view returns (string)',
-                  'function deposit() external payable',
-                  'function withdraw(uint256) external'
-                ],
-                walletState.provider
-              );
-
-              const [balance, decimals, name, contractSymbol] = await Promise.all([
-                wethContract.balanceOf(address),
-                wethContract.decimals().catch(() => 18),
-                wethContract.name().catch(() => 'Unknown'),
-                wethContract.symbol().catch(() => 'UNKNOWN')
-              ]);
-
-              console.log(`WETH Contract Details:`, {
-                address: tokenAddress,
-                name,
-                symbol: contractSymbol,
-                decimals,
-                balance: balance.toString(),
-                balanceFormatted: ethers.formatUnits(balance, decimals)
-              });
-
-              balances[symbol] = ethers.formatUnits(balance, decimals);
-
-              // Additional verification for WETH
-              if (balance.toString() === '0') {
-                console.warn('WETH balance is 0, this might be expected if no conversion has been done');
+              // Get decimals first
+              if (symbol === 'USDC') {
+                decimals = 6; // USDC uses 6 decimals
+              } else {
+                decimals = await tokenContract.decimals().catch(() => 18);
               }
 
-            } catch (wethError) {
-              console.error('Error fetching WETH balance:', wethError);
-              balances[symbol] = '0';
+              // Get balance
+              balance = await tokenContract.balanceOf(address);
+              break; // Success, exit retry loop
+            } catch (retryError) {
+              attempts++;
+              console.warn(`⚠️ Attempt ${attempts} failed for ${symbol}:`, retryError);
+              if (attempts >= maxAttempts) {
+                throw retryError;
+              }
+              // Wait 500ms before retry
+              await new Promise(resolve => setTimeout(resolve, 500));
             }
-          } else {
-            // Handle other tokens normally
-            try {
-              const [contractName, contractSymbol] = await Promise.all([
-                tokenContract.name().catch(() => 'Unknown'),
-                tokenContract.symbol().catch(() => symbol)
-              ]);
-              console.log(`Contract ${symbol} info - Name: ${contractName}, Symbol: ${contractSymbol}`);
-            } catch (e) {
-              console.warn(`Could not verify contract info for ${symbol}:`, e);
-            }
+          }
 
-            // Get both balance and decimals to ensure proper formatting
-            const [balance, decimals] = await Promise.all([
-              tokenContract.balanceOf(address),
-              tokenContract.decimals().catch(() => {
-                console.warn(`Using fallback decimals for ${symbol}`);
-                return symbol === 'USDC' ? 6 : 18;
-              })
+          // Format balance with proper decimals
+          balances[symbol] = ethers.formatUnits(balance!, decimals!);
+          
+          console.log(`✅ ${symbol} wallet balance: ${balances[symbol]} (raw: ${balance!.toString()}, decimals: ${decimals})`);
+
+          // Additional verification for contracts
+          try {
+            const [contractName, contractSymbol] = await Promise.all([
+              tokenContract.name().catch(() => 'Unknown'),
+              tokenContract.symbol().catch(() => symbol)
             ]);
-
-            balances[symbol] = ethers.formatUnits(balance, decimals);
-            console.log(`${symbol} raw balance:`, balance.toString());
-            console.log(`${symbol} decimals:`, decimals);
-            console.log(`${symbol} formatted balance:`, balances[symbol]);
+            console.log(`ℹ️ ${symbol} contract info - Name: ${contractName}, Symbol: ${contractSymbol}`);
+          } catch (e) {
+            console.warn(`⚠️ Could not verify contract info for ${symbol}:`, e);
           }
 
         } catch (error) {
-          console.error(`Error fetching ${symbol} balance from ${tokenAddress}:`, error);
+          console.error(`❌ Error fetching ${symbol} wallet balance from ${tokenAddress}:`, error);
           balances[symbol] = '0';
         }
       }
 
-      console.log('Final token balances:', balances);
+      console.log('📊 Final token balances summary:', balances);
       return balances;
     },
     enabled: isConnected && !!address && !!walletState.provider,
-    refetchInterval: 3000, // Check every 3 seconds for faster updates
-    staleTime: 1000 // Consider data stale after 1 second for faster refresh
+    refetchInterval: 2000, // Check every 2 seconds for faster updates
+    staleTime: 500 // Consider data stale after 500ms for immediate refresh
   });
 
   // Get ETH price

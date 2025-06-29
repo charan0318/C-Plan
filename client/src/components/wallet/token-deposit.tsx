@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { useContract } from "@/hooks/use-contract";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowDown, ArrowUp, Loader2, CheckCircle, Upload } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function TokenDeposit() {
   const [selectedToken, setSelectedToken] = useState<string>("");
@@ -15,6 +16,7 @@ export function TokenDeposit() {
   const [isApproving, setIsApproving] = useState(false);
 
   const { depositToken, isDepositingToken, tokenBalances, withdrawToken, isWithdrawingToken, convertEthToWeth, isConvertingEthToWeth } = useContract();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
 
   const supportedTokens = [
@@ -36,8 +38,19 @@ export function TokenDeposit() {
     try {
       setIsApproving(true);
       await depositToken({ token: selectedToken, amount });
+      
+      // Force immediate refresh of balances
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["token-balances"] });
+      }, 1000);
+      
       setAmount("");
       setSelectedToken("");
+      
+      toast({
+        title: "Deposit Complete",
+        description: `${amount} ${selectedToken} deposited successfully!`,
+      });
     } catch (error: any) {
       console.error("Deposit error:", error);
     } finally {
@@ -58,8 +71,19 @@ export function TokenDeposit() {
     try {
       setIsApproving(true);
       await withdrawToken({ token: selectedToken, amount });
+      
+      // Force immediate refresh of balances
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["token-balances"] });
+      }, 1000);
+      
       setAmount("");
       setSelectedToken("");
+      
+      toast({
+        title: "Withdrawal Complete",
+        description: `${amount} ${selectedToken} withdrawn successfully!`,
+      });
     } catch (error: any) {
       console.error("Withdraw error:", error);
     } finally {
