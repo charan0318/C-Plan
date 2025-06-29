@@ -165,7 +165,8 @@ export function useContract() {
   const isContractDeployed = CONTRACT_CONFIG.address && 
     CONTRACT_CONFIG.address !== "0x0000000000000000000000000000000000000000" &&
     CONTRACT_CONFIG.address.length === 42 &&
-    CONTRACT_CONFIG.address.startsWith("0x");
+    CONTRACT_CONFIG.address.startsWith("0x") &&
+    CONTRACT_CONFIG.address !== "0x1234567890123456789012345678901234567890";
   
   // Debug logging
   if (typeof window !== 'undefined') {

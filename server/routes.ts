@@ -105,6 +105,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Execute intent
+  app.post("/api/intents/:id/execute", async (req, res) => {
+    try {
+      const intentId = parseInt(req.params.id);
+      const intent = await storage.getIntent(intentId);
+
+      if (!intent) {
+        return res.status(404).json({ error: "Intent not found" });
+      }
+
+      // Update intent as executed
+      const updatedIntent = await storage.updateIntent(intentId, { executed: true });
+      
+      res.json({ success: true, intent: updatedIntent });
+    } catch (error) {
+      console.error("Execute intent error:", error);
+      res.status(500).json({ error: "Failed to execute intent" });
+    }
+  });
+
+  // Get NFTs (mock endpoint)
+  app.get("/api/nfts", async (req, res) => {
+    try {
+      res.json([]);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch NFTs" });
+    }
+  });
+
+  // Get dashboard stats
+  app.get("/api/dashboard/stats", async (req, res) => {
+    try {
+      const userId = 1;
+      const intents = await storage.getIntents(userId);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const executedToday = intents.filter(intent => 
+        intent.executed && new Date(intent.updatedAt) >= today
+      ).length;
+
+      res.json({
+        executedToday,
+        totalIntents: intents.length,
+        activeIntents: intents.filter(i => !i.executed).length
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch dashboard stats" });
+    }
+  });
+
   // Create new intent with smart contract integration
   app.post("/api/intents", async (req, res) => {
     try {

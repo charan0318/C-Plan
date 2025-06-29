@@ -30,17 +30,26 @@ export default function Dashboard() {
     queryFn: async () => {
       const response = await fetch("/api/intents");
       if (!response.ok) throw new Error("Failed to fetch intents");
-      return response.json();
+      const data = await response.json();
+      return data.map((intent: any) => ({
+        ...intent,
+        isActive: !intent.executed,
+        timestamp: intent.createdAt ? new Date(intent.createdAt).getTime() / 1000 : Date.now() / 1000
+      }));
     }
   });
 
   const { data: nftBalance = 0, isLoading: isLoadingBalance } = useQuery({
     queryKey: ["/api/nfts"],
     queryFn: async () => {
-      const response = await fetch("/api/nfts");
-      if (!response.ok) return 0;
-      const data = await response.json();
-      return data.length || 0;
+      try {
+        const response = await fetch("/api/nfts");
+        if (!response.ok) return 0;
+        const data = await response.json();
+        return Array.isArray(data) ? data.length : 0;
+      } catch (error) {
+        return 0;
+      }
     }
   });
   
@@ -49,12 +58,16 @@ export default function Dashboard() {
 
   const [executingIntentId, setExecutingIntentId] = useState<number | null>(null);
   
-  const { data: stats } = useQuery({
+  const { data: stats = { executedToday: 0 } } = useQuery({
     queryKey: ["/api/dashboard/stats"],
     queryFn: async () => {
-      const response = await fetch("/api/dashboard/stats");
-      if (!response.ok) throw new Error("Failed to fetch stats");
-      return response.json();
+      try {
+        const response = await fetch("/api/dashboard/stats");
+        if (!response.ok) return { executedToday: 0 };
+        return response.json();
+      } catch (error) {
+        return { executedToday: 0 };
+      }
     }
   });
 
