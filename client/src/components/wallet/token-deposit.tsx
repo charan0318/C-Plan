@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { useContract } from "@/hooks/use-contract";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowDown, ArrowUp, Loader2, CheckCircle } from "lucide-react";
+import { ArrowDown, ArrowUp, Loader2, CheckCircle, Upload } from "lucide-react";
 
 export function TokenDeposit() {
   const [selectedToken, setSelectedToken] = useState<string>("");
