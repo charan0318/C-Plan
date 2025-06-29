@@ -7,7 +7,9 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-export async function apiRequest(method: string, endpoint: string, data?: any) {
+export async function apiRequest(method: string, path: string, data?: any) {
+  const url = path.startsWith('/') ? path : `/${path}`;
+
   const config: RequestInit = {
     method,
     headers: {
@@ -15,33 +17,26 @@ export async function apiRequest(method: string, endpoint: string, data?: any) {
     },
   };
 
-  if (data) {
+  if (data && (method === 'POST' || method === 'PATCH' || method === 'PUT')) {
     config.body = JSON.stringify(data);
   }
 
-  try {
-    const response = await fetch(endpoint, config);
+  console.log(`API Request: ${method} ${url}`, data);
 
-    if (!response.ok) {
-      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+  const response = await fetch(url, config);
 
-      try {
-        const errorData = await response.json();
-        if (errorData.message) {
-          errorMessage = errorData.message;
-        }
-      } catch (e) {
-        // If response doesn't have JSON, use the default error message
-      }
-
-      throw new Error(errorMessage);
+  if (!response.ok) {
+    let errorText;
+    try {
+      errorText = await response.text();
+    } catch (e) {
+      errorText = `HTTP ${response.status}`;
     }
-
-    return response;
-  } catch (error: any) {
-    console.error(`API request failed: ${method} ${endpoint}`, error);
-    throw error;
+    console.error(`API Error: ${method} ${url}`, errorText);
+    throw new Error(errorText || `HTTP ${response.status}`);
   }
+
+  return response;
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";

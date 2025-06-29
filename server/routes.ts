@@ -108,14 +108,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create new intent with smart contract integration
   app.post("/api/intents", async (req, res) => {
     try {
-      if (!req.body) {
+      console.log("Intent creation request:", req.body);
+      
+      if (!req.body || Object.keys(req.body).length === 0) {
         return res.status(400).json({ 
           error: "Request body is required",
           message: "Please provide intent data" 
         });
       }
 
-      const { userId, walletAddress, title, description, action, token, amount, frequency, conditions, targetChain, elizaParsed } = req.body;
+      const { userId = 1, walletAddress, title, description, action = "GENERAL", token = "ETH", amount, frequency = "ONCE", conditions = {}, targetChain = "ethereum-sepolia", elizaParsed = null } = req.body;
+      
+      // Validate required fields
+      if (!description) {
+        return res.status(400).json({
+          error: "Description is required",
+          message: "Please provide a description for your intent"
+        });
+      }
+      
+      if (!amount) {
+        return res.status(400).json({
+          error: "Amount is required", 
+          message: "Please provide an estimated cost"
+        });
+      }
 
       // Prepare smart contract parameters
       const intentDescription = JSON.stringify({

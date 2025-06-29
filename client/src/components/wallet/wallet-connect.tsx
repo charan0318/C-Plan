@@ -8,12 +8,7 @@ import { Wallet, Loader2, AlertCircle, CheckCircle, LogOut } from "lucide-react"
 export function WalletConnect() {
   const walletState = useWallet();
   const { toast } = useToast();
-  
-  // Add error boundary check
-  if (!walletState) {
-    console.error("WalletConnect: walletState is undefined");
-    return null;
-  }
+  const [isLoading, setIsLoading] = useState(false);
 
   const { 
     isConnected, 
@@ -22,9 +17,18 @@ export function WalletConnect() {
     isConnecting, 
     connectWallet, 
     disconnectWallet 
-  } = walletState;
+  } = walletState || {};
+  
+  // Add error boundary check after hooks
+  if (!walletState) {
+    console.error("WalletConnect: walletState is undefined");
+    return null;
+  }
 
   const handleConnect = async () => {
+    if (!connectWallet) return;
+    
+    setIsLoading(true);
     try {
       await connectWallet();
       toast({
@@ -37,10 +41,14 @@ export function WalletConnect() {
         description: error.message || "Failed to connect wallet",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleDisconnect = async () => {
+    if (!disconnectWallet) return;
+    
     try {
       await disconnectWallet();
       toast({
@@ -86,10 +94,10 @@ export function WalletConnect() {
   return (
     <Button
       onClick={handleConnect}
-      disabled={isConnecting}
+      disabled={isConnecting || isLoading}
       className="bg-primary hover:bg-primary-dark"
     >
-      {isConnecting ? (
+      {(isConnecting || isLoading) ? (
         <>
           <Loader2 size={16} className="mr-2 animate-spin" />
           Connecting...

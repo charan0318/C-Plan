@@ -35,7 +35,7 @@ export function useContract() {
 
       try {
         // Create intent via API
-        const response = await apiRequest("POST", "/api/intents", {
+        const intentData = {
           userId: 1, // Mock user ID
           walletAddress: address,
           title: description.substring(0, 50) + (description.length > 50 ? "..." : ""),
@@ -47,14 +47,33 @@ export function useContract() {
           conditions: {},
           targetChain: "ethereum-sepolia",
           elizaParsed: null
+        };
+        
+        console.log("Creating intent with data:", intentData);
+        
+        const response = await fetch("/api/intents", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(intentData)
         });
 
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ message: "Unknown error" }));
-          throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+          let errorData;
+          try {
+            errorData = await response.json();
+          } catch (e) {
+            errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
+          }
+          
+          console.error("Intent creation failed:", errorData);
+          throw new Error(errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`);
         }
 
-        return response.json();
+        const result = await response.json();
+        console.log("Intent created successfully:", result);
+        return result;
       } catch (error: any) {
         console.error("API request failed:", error);
         throw new Error(error.message || "Failed to create intent");
