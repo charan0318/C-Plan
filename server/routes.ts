@@ -233,6 +233,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             console.log("Contract loaded, proceeding with swap execution...");
 
+            // First, ensure tokens are supported in the contract
+            try {
+              console.log("Adding supported tokens to contract...");
+              const addUsdcTx = await contract.addSupportedToken(USDC_ADDRESS);
+              await addUsdcTx.wait();
+              console.log("USDC added as supported token");
+
+              const addWethTx = await contract.addSupportedToken(WETH_ADDRESS);
+              await addWethTx.wait();
+              console.log("WETH added as supported token");
+            } catch (addTokenError) {
+              console.log("Note: Could not add supported tokens (may already be added):", addTokenError.message);
+            }
+
             // Check user's USDC balance in contract
             const userUsdcBalance = await contract.getUserBalance(signer.address, USDC_ADDRESS);
             console.log(`User USDC balance in contract: ${ethers.formatUnits(userUsdcBalance, 6)} USDC`);
@@ -299,57 +313,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } catch (contractError) {
             console.error("❌ Blockchain execution failed:", contractError);
             
-            // For now, simulate the swap and update balances manually
-            console.log("🔄 Falling back to simulated swap execution...");
-            
-            try {
-              // Simulate the swap by calculating expected output
-              const simulatedEthReceived = (dollarAmount / currentEthPrice).toFixed(6);
-              
-              // Create a mock transaction hash for tracking
-              const mockTxHash = `0x${Math.random().toString(16).substr(2, 64)}`;
-              
-              console.log(`✅ DCA Swap simulated: ${dollarAmount} USDC → ${simulatedEthReceived} ETH at $${currentEthPrice}/ETH`);
-              
-              // Update mock balance simulation - reduce USDC, increase WETH
-              const currentUsdcBalance = parseFloat(mockConnections.find(c => c.balances?.USDC_DEPOSITED)?.balances?.USDC_DEPOSITED || '3.399999');
-              const currentWethBalance = parseFloat(mockConnections.find(c => c.balances?.WETH_DEPOSITED)?.balances?.WETH_DEPOSITED || '0');
-              
-              // Find or create balance object
-              let balanceConnection = mockConnections.find(c => c.balances);
-              if (!balanceConnection) {
-                balanceConnection = { balances: {} };
-                mockConnections.push(balanceConnection);
+            return res.status(400).json({
+              success: false,
+              executed: false,
+              error: "Contract execution failed",
+              message: `Failed to execute DCA swap: ${contractError.message}`,
+              details: {
+                reason: contractError.message,
+                suggestion: "Contract may not be properly configured with Uniswap router. Please check contract setup.",
+                contractError: contractError.message
               }
-              
-              // Update balances: subtract USDC, add WETH
-              balanceConnection.balances.USDC_DEPOSITED = Math.max(0, currentUsdcBalance - dollarAmount).toFixed(6);
-              balanceConnection.balances.WETH_DEPOSITED = (currentWethBalance + parseFloat(simulatedEthReceived)).toFixed(6);
-              
-              console.log(`📊 Updated mock balances: USDC: ${balanceConnection.balances.USDC_DEPOSITED}, WETH: ${balanceConnection.balances.WETH_DEPOSITED}`);
-              
-              executionMessage = `✅ DCA Executed (SIMULATED): Swapped ${dollarAmount} USDC → ${simulatedEthReceived} ETH at $${currentEthPrice}/ETH - Mock TX: ${mockTxHash}`;
-              
-              executionResult.transactionHash = mockTxHash;
-              executionResult.gasUsed = "21000";
-              executionResult.actualEthReceived = simulatedEthReceived;
-              executionResult.onChainSuccess = true;
-              executionResult.simulated = true;
-              
-            } catch (simulationError) {
-              console.error("❌ Even simulation failed:", simulationError);
-              
-              return res.status(400).json({
-                success: false,
-                executed: false,
-                error: "Contract execution failed",
-                message: `Failed to execute DCA swap: ${contractError.message}`,
-                details: {
-                  reason: contractError.message,
-                  suggestion: "Contract may not be properly configured with Uniswap router. Please check contract setup."
-                }
-              });
-            }
+            });
           }
 
           // For recurring intents, don't mark as executed, just update last execution

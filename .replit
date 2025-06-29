@@ -15,8 +15,12 @@ run = ["npm", "run", "start"]
 localPort = 5000
 externalPort = 80
 
+[[ports]]
+localPort = 5001
+externalPort = 3000
+
 [workflows]
-runButton = "Project"
+runButton = "Start Application (Fixed Port)"
 
 [[workflows.workflow]]
 name = "Project"
@@ -71,3 +75,12 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "node scripts/deploy-production.js"
+
+[[workflows.workflow]]
+name = "Start Application (Fixed Port)"
+author = 18632091
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "PORT=5001 npm run dev"
