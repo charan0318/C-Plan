@@ -11,11 +11,13 @@ import { useContract } from "@/hooks/use-contract";
 import { useWallet } from "@/hooks/use-wallet";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function Planner() {
   const { createIntent, isTransactionPending, isContractDeployed } = useContract();
   const { isConnected, address } = useWallet();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const [description, setDescription] = useState("");
   const [estimatedCost, setEstimatedCost] = useState("");
@@ -60,14 +62,43 @@ export default function Planner() {
 
     setIsCreating(true);
     try {
+      // Create intent on-chain first
       await createIntent({
         description: description.trim(),
         estimatedCost: estimatedCost
       });
 
+      // Also store in local API for dashboard display
+      const response = await fetch('/api/intents', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          walletAddress: address,
+          title: description.trim(),
+          description: description.trim(),
+          action: "EXECUTE",
+          token: "ETH",
+          amount: estimatedCost,
+          frequency: "CONDITION_BASED",
+          conditions: { estimatedCost: estimatedCost },
+          targetChain: 11155111,
+          isActive: true
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to store intent in database');
+      }
+
       // Reset form
       setDescription("");
       setEstimatedCost("");
+
+      // Invalidate dashboard queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ["/api/intents"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
 
       toast({
         title: "Intent Created",
@@ -75,6 +106,11 @@ export default function Planner() {
       });
     } catch (error) {
       console.error("Failed to create intent:", error);
+      toast({
+        title: "Creation Failed",
+        description: "Failed to create intent. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsCreating(false);
     }
