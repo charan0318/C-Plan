@@ -367,29 +367,10 @@ export function SwapExecutor() {
           </Button>
         )}
 
-        <div className="space-y-3">
-          <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-green-800 dark:text-green-200">Test DCA Functionality</span>
-              <Button
-                            onClick={handleTestDCASwap}
-                            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-                            disabled={parseFloat(getContractBalance('USDC')) < 1}
-                          >
-                            <Zap className="mr-2 h-4 w-4" />
-                            🎯 Demo Swap (1 USDC → WETH) - Instant UI Update!
-                          </Button>
-            </div>
-            <p className="text-xs text-green-700 dark:text-green-300">
-              Test your DCA setup by swapping some USDC for WETH
-            </p>
-          </div>
-
-          <div className="text-xs text-gray-500 space-y-1">
-            <p>• Swaps happen within the smart contract</p>
-            <p>• Earned tokens appear in "Contract Balances"</p>
-            <p>• Use withdraw to move tokens to your wallet</p>
-          </div>
+        <div className="text-xs text-gray-500 space-y-1">
+          <p>• Swaps happen within the smart contract</p>
+          <p>• Earned tokens appear in "Contract Balances"</p>
+          <p>• Use withdraw to move tokens to your wallet</p>
         </div>
 
         <div className="text-xs text-gray-500 space-y-1">
