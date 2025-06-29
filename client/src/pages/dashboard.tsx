@@ -154,6 +154,7 @@ export default function Dashboard() {
 
   const walletState = useWallet();
   const { address, isConnected } = walletState;
+  const { ethPrice } = useContract();
   const { toast } = useToast();
 
   const [executingIntentId, setExecutingIntentId] = useState<number | null>(null);
