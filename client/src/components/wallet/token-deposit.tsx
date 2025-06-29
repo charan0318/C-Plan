@@ -79,6 +79,10 @@ export function TokenDeposit() {
     return tokenBalances?.[symbol] || '0';
   };
 
+  const getDepositedBalance = (symbol: string) => {
+    return tokenBalances?.[`${symbol}_DEPOSITED`] || '0';
+  };
+
   const formatBalance = (balance: string) => {
     const num = parseFloat(balance);
     if (num < 0.001) return '< 0.001';
@@ -114,11 +118,19 @@ export function TokenDeposit() {
           </Select>
 
           {selectedToken && (
-            <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
-              <span className="text-sm text-gray-600 dark:text-gray-400">Wallet Balance:</span>
-              <Badge variant="outline">
-                {formatBalance(getWalletBalance(selectedToken))} {selectedToken}
-              </Badge>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Wallet Balance:</span>
+                <Badge variant="outline">
+                  {formatBalance(getWalletBalance(selectedToken))} {selectedToken}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Deposited (On-Chain):</span>
+                <Badge variant="secondary">
+                  {formatBalance(getDepositedBalance(selectedToken))} {selectedToken}
+                </Badge>
+              </div>
             </div>
           )}
         </div>

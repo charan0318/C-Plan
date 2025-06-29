@@ -38,53 +38,32 @@ export function useContract() {
       }
 
       try {
-        // Create intent via API
-        const intentData = {
-          userId: 1, // Mock user ID
-          walletAddress: address,
-          title: description.substring(0, 50) + (description.length > 50 ? "..." : ""),
-          description,
-          action: "GENERAL",
-          token: "ETH",
-          amount: estimatedCost,
-          frequency: "ONCE",
-          conditions: {},
-          targetChain: "ethereum-sepolia",
-          elizaParsed: null
-        };
-        
-        console.log("Creating intent with data:", intentData);
-        
-        const response = await fetch("/api/intents", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(intentData)
+        // Create intent on blockchain
+        const contract = getContractInstance();
+        const costInWei = ethers.parseEther(estimatedCost);
+
+        const tx = await contract.createIntent(description, costInWei);
+
+        toast({
+          title: "Transaction Submitted",
+          description: `Creating intent on-chain. Transaction: ${tx.hash}`,
         });
 
-        if (!response.ok) {
-          let errorData;
-          try {
-            errorData = await response.json();
-          } catch (e) {
-            errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
-          }
-          
-          console.error("Intent creation failed:", errorData);
-          throw new Error(errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-        }
+        const receipt = await tx.wait();
 
-        const result = await response.json();
-        console.log("Intent created successfully:", result);
-        return result;
+        toast({
+          title: "Intent Created On-Chain!",
+          description: `Your intent has been stored on the blockchain. Block: ${receipt.blockNumber}`,
+        });
+
+        return { id: Date.now(), description, estimatedCost };
       } catch (error: any) {
         console.error("API request failed:", error);
         throw new Error(error.message || "Failed to create intent");
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/intents"] });
+      queryClient.invalidateQueries({ queryKey: ["user-intents"] });
       toast({
         title: "Intent Created",
         description: "Your intent has been created successfully!",
@@ -173,45 +152,66 @@ export function useContract() {
     }
   });
 
-  // Get user intents query
+  // Fetch user intents from blockchain
   const { data: userIntents = [], isLoading: isLoadingIntents } = useQuery({
-    queryKey: ['user-intents', address],
-    queryFn: async (): Promise<Intent[]> => {
-      if (!walletState.provider || !address) return [];
+    queryKey: ["user-intents", address],
+    queryFn: async () => {
+      if (!address || !walletState.provider) return [];
+      try {
+        const contract = getContract(walletState.provider);
+        const intentIds = await contract.getUserIntents(address);
 
-      const contract = getContract(walletState.provider);
-      const intentIds = await contract.getUserIntents(address);
+        const intents = await Promise.all(
+          intentIds.map(async (id: bigint) => {
+            const intent = await contract.getIntent(id);
+            return {
+              id: Number(intent.id),
+              userId: 1, // Mock user ID since we're using wallet address
+              walletAddress: intent.user,
+              title: intent.description,
+              description: intent.description,
+              action: intent.tokenIn && intent.tokenOut ? "SWAP" : "REMIND",
+              token: intent.tokenIn || "ETH",
+              amount: intent.amountIn ? ethers.formatEther(intent.amountIn) : null,
+              frequency: "CONDITION_BASED",
+              conditions: intent.tokenOut ? { tokenOut: intent.tokenOut, slippage: intent.slippageTolerance } : {},
+              targetChain: "sepolia",
+              isActive: !intent.executed,
+              nextExecution: intent.isScheduled && intent.executionTime > 0 ? new Date(Number(intent.executionTime) * 1000) : null,
+              lastExecution: intent.executed ? new Date() : null,
+              createdAt: new Date(Number(intent.timestamp) * 1000),
+              updatedAt: new Date(Number(intent.timestamp) * 1000),
+              timestamp: Number(intent.timestamp),
+              executed: intent.executed,
+              estimatedCost: ethers.formatEther(intent.estimatedCost)
+            };
+          })
+        );
 
-      const intents = await Promise.all(
-        intentIds.map(async (id: bigint) => {
-          const intent = await contract.getIntent(id);
-          return {
-            id: Number(intent.id),
-            user: intent.user,
-            description: intent.description,
-            estimatedCost: ethers.formatEther(intent.estimatedCost),
-            executed: intent.executed,
-            timestamp: new Date(Number(intent.timestamp) * 1000)
-          };
-        })
-      );
-
-      return intents;
+        return intents.sort((a, b) => b.timestamp - a.timestamp);
+      } catch (error) {
+        console.error("Error fetching intents from blockchain:", error);
+        return [];
+      }
     },
-    enabled: isConnected && !!address && !!walletState.provider && CONTRACT_CONFIG.address !== "0x0000000000000000000000000000000000000000"
+    enabled: !!address && !!walletState.provider && isContractDeployed
   });
 
-  // Get NFT balance query
+  // Fetch NFT balance from blockchain
   const { data: nftBalance = 0 } = useQuery({
-    queryKey: ['nft-balance', address],
-    queryFn: async (): Promise<number> => {
-      if (!walletState.provider || !address) return 0;
-
-      const contract = getContract(walletState.provider);
-      const balance = await contract.balanceOf(address);
-      return Number(balance);
+    queryKey: ["nft-balance", address],
+    queryFn: async () => {
+      if (!address || !walletState.provider) return 0;
+      try {
+        const contract = getContract(walletState.provider);
+        const balance = await contract.balanceOf(address);
+        return Number(balance);
+      } catch (error) {
+        console.error("Error fetching NFT balance from blockchain:", error);
+        return 0;
+      }
     },
-    enabled: isConnected && !!address && !!walletState.provider && CONTRACT_CONFIG.address !== "0x0000000000000000000000000000000000000000"
+    enabled: !!address && !!walletState.provider && isContractDeployed
   });
 
   // Get token balances - fetch directly from token contracts
@@ -237,7 +237,7 @@ export function useContract() {
       for (const [symbol, tokenAddress] of Object.entries(TOKENS)) {
         try {
           console.log(`Fetching ${symbol} balance from contract:`, tokenAddress);
-          
+
           const tokenContract = new ethers.Contract(
             tokenAddress,
             [
@@ -248,7 +248,7 @@ export function useContract() {
             ],
             walletState.provider
           );
-          
+
           // Verify contract is valid by checking name/symbol
           try {
             const [contractName, contractSymbol] = await Promise.all([
@@ -259,7 +259,7 @@ export function useContract() {
           } catch (e) {
             console.warn(`Could not verify contract info for ${symbol}:`, e);
           }
-          
+
           // Get both balance and decimals to ensure proper formatting
           const [balance, decimals] = await Promise.all([
             tokenContract.balanceOf(address),
@@ -268,18 +268,18 @@ export function useContract() {
               return symbol === 'USDC' ? 6 : 18;
             })
           ]);
-          
+
           balances[symbol] = ethers.formatUnits(balance, decimals);
           console.log(`${symbol} raw balance:`, balance.toString());
           console.log(`${symbol} decimals:`, decimals);
           console.log(`${symbol} formatted balance:`, balances[symbol]);
-          
+
           // Special check for WETH to ensure it's working
           if (symbol === 'WETH') {
             console.log('WETH contract address:', tokenAddress);
             console.log('WETH balance (wei):', balance.toString());
             console.log('WETH balance (formatted):', balances[symbol]);
-            
+
             // If balance is 0, let's double-check with a different method
             if (balance.toString() === '0') {
               try {
@@ -293,7 +293,7 @@ export function useContract() {
               }
             }
           }
-          
+
         } catch (error) {
           console.error(`Error fetching ${symbol} balance from ${tokenAddress}:`, error);
           balances[symbol] = '0';
@@ -327,77 +327,101 @@ export function useContract() {
   // Deposit token mutation
   const depositTokenMutation = useMutation({
     mutationFn: async ({ token, amount }: { token: string; amount: string }) => {
-      const contract = getContractInstance();
-      const tokenAddress = TOKENS[token as keyof typeof TOKENS];
-      
-      if (!tokenAddress) throw new Error('Unsupported token');
+      if (!address) throw new Error("Wallet not connected");
 
-      // First approve the token
-      const tokenContract = new ethers.Contract(
-        tokenAddress,
-        ['function approve(address spender, uint256 amount) external returns (bool)'],
-        signer
-      );
+      setIsTransactionPending(true);
 
-      const decimals = token === 'USDC' ? 6 : 18;
-      const amountWei = ethers.parseUnits(amount, decimals);
+      try {
+        const contract = getContractInstance();
+        const tokenAddress = TOKENS[token as keyof typeof TOKENS];
+        const amountInWei = ethers.parseEther(amount);
 
-      // Approve transaction
-      const approveTx = await tokenContract.approve(CONTRACT_CONFIG.address, amountWei);
-      await approveTx.wait();
+        toast({
+          title: "Approving Token...",
+          description: `Approving ${amount} ${token} for deposit`,
+        });
 
-      // Deposit transaction
-      const depositTx = await contract.depositToken(tokenAddress, amountWei);
-      const receipt = await depositTx.wait();
+        // First approve the contract to spend tokens
+        const tokenContract = new ethers.Contract(
+          tokenAddress,
+          ["function approve(address spender, uint256 amount) external returns (bool)"],
+          signer
+        );
 
-      return { approveTx, depositTx, receipt };
+        const approveTx = await tokenContract.approve(CONTRACT_CONFIG.address, amountInWei);
+        await approveTx.wait();
+
+        toast({
+          title: "Depositing Token...",
+          description: `Depositing ${amount} ${token} to contract`,
+        });
+
+        // Then deposit the tokens
+        const depositTx = await contract.depositToken(tokenAddress, amountInWei);
+        const receipt = await depositTx.wait();
+
+        toast({
+          title: "Deposit Successful On-Chain!",
+          description: `${amount} ${token} deposited to blockchain. Block: ${receipt.blockNumber}`,
+        });
+
+        return { token, amount, transactionHash: depositTx.hash };
+      } catch (error: any) {
+        toast({
+          title: "Deposit Failed",
+          description: error.message || "Failed to deposit tokens on-chain",
+          variant: "destructive",
+        });
+        throw error;
+      } finally {
+        setIsTransactionPending(false);
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['token-balances'] });
-      toast({
-        title: "Deposit Successful",
-        description: "Tokens have been deposited successfully!",
-      });
+      queryClient.invalidateQueries({ queryKey: ["token-balances"] });
     },
-    onError: (error: any) => {
-      toast({
-        title: "Deposit Failed",
-        description: error.message || "Failed to deposit tokens",
-        variant: "destructive",
-      });
-    }
   });
 
   // Withdraw token mutation
   const withdrawTokenMutation = useMutation({
     mutationFn: async ({ token, amount }: { token: string; amount: string }) => {
-      const contract = getContractInstance();
-      const tokenAddress = TOKENS[token as keyof typeof TOKENS];
-      
-      if (!tokenAddress) throw new Error('Unsupported token');
+      if (!address) throw new Error("Wallet not connected");
 
-      const decimals = token === 'USDC' ? 6 : 18;
-      const amountWei = ethers.parseUnits(amount, decimals);
+      setIsTransactionPending(true);
 
-      const tx = await contract.withdrawToken(tokenAddress, amountWei);
-      const receipt = await tx.wait();
+      try {
+        const contract = getContractInstance();
+        const tokenAddress = TOKENS[token as keyof typeof TOKENS];
+        const amountInWei = ethers.parseEther(amount);
 
-      return { tx, receipt };
+        toast({
+          title: "Withdrawing Token...",
+          description: `Withdrawing ${amount} ${token} from contract`,
+        });
+
+        const withdrawTx = await contract.withdrawToken(tokenAddress, amountInWei);
+        const receipt = await withdrawTx.wait();
+
+        toast({
+          title: "Withdrawal Successful On-Chain!",
+          description: `${amount} ${token} withdrawn from blockchain. Block: ${receipt.blockNumber}`,
+        });
+
+        return { token, amount, transactionHash: withdrawTx.hash };
+      } catch (error: any) {
+        toast({
+          title: "Withdrawal Failed",
+          description: error.message || "Failed to withdraw tokens from blockchain",
+          variant: "destructive",
+        });
+        throw error;
+      } finally {
+        setIsTransactionPending(false);
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['token-balances'] });
-      toast({
-        title: "Withdrawal Successful",
-        description: "Tokens have been withdrawn successfully!",
-      });
+      queryClient.invalidateQueries({ queryKey: ["token-balances"] });
     },
-    onError: (error: any) => {
-      toast({
-        title: "Withdrawal Failed",
-        description: error.message || "Failed to withdraw tokens",
-        variant: "destructive",
-      });
-    }
   });
 
   // Convert ETH to WETH directly
@@ -407,7 +431,7 @@ export function useContract() {
 
       const wethAddress = TOKENS.WETH;
       console.log("WETH contract address:", wethAddress);
-      
+
       const wethContract = new ethers.Contract(
         wethAddress,
         [
@@ -436,20 +460,20 @@ export function useContract() {
       console.log(`Converting ${amount} ETH to WETH for address: ${address}`);
       const ethAmount = ethers.parseEther(amount);
       console.log("Amount in wei:", ethAmount.toString());
-      
+
       // Check initial WETH balance
       const initialBalance = await wethContract.balanceOf(address);
       console.log("Initial WETH balance (wei):", initialBalance.toString());
       console.log("Initial WETH balance (formatted):", ethers.formatEther(initialBalance));
-      
+
       // Check ETH balance before transaction
       const ethBalance = await walletState.provider!.getBalance(address);
       console.log("ETH balance before conversion:", ethers.formatEther(ethBalance));
-      
+
       if (ethBalance < ethAmount) {
         throw new Error("Insufficient ETH balance");
       }
-      
+
       const tx = await wethContract.deposit({ value: ethAmount });
       console.log("Transaction sent:", tx.hash);
       console.log("Transaction details:", {
@@ -457,22 +481,22 @@ export function useContract() {
         value: tx.value?.toString(),
         gasLimit: tx.gasLimit?.toString()
       });
-      
+
       const receipt = await tx.wait();
       console.log("Transaction confirmed:", receipt.status === 1 ? "Success" : "Failed");
       console.log("Gas used:", receipt.gasUsed?.toString());
-      
+
       // Wait a moment for blockchain state to update
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       // Check final WETH balance
       const finalBalance = await wethContract.balanceOf(address);
       console.log("Final WETH balance (wei):", finalBalance.toString());
       console.log("Final WETH balance (formatted):", ethers.formatEther(finalBalance));
-      
+
       const balanceIncrease = finalBalance - initialBalance;
       console.log("WETH balance increase:", ethers.formatEther(balanceIncrease));
-      
+
       if (balanceIncrease === 0n) {
         console.warn("WETH balance did not increase after conversion!");
       }
@@ -481,17 +505,17 @@ export function useContract() {
     },
     onSuccess: async (data) => {
       console.log("Conversion successful, refreshing balances...");
-      
+
       // Wait a bit more for blockchain propagation
       await new Promise(resolve => setTimeout(resolve, 3000));
-      
+
       // Force refresh token balances multiple times to ensure we get the update
       await refetchBalances();
       setTimeout(async () => {
         await refetchBalances();
         queryClient.invalidateQueries({ queryKey: ['token-balances'] });
       }, 2000);
-      
+
       toast({
         title: "ETH Converted Successfully!",
         description: `Converted ${ethers.formatEther(data.balanceIncrease)} ETH to WETH. Tx: ${data.tx.hash.slice(0, 10)}...`,
@@ -523,7 +547,7 @@ export function useContract() {
       const contract = getContractInstance();
       const tokenInAddress = TOKENS[tokenIn as keyof typeof TOKENS];
       const tokenOutAddress = tokenOut === 'ETH' ? ethers.ZeroAddress : TOKENS[tokenOut as keyof typeof TOKENS];
-      
+
       const decimals = tokenIn === 'USDC' ? 6 : 18;
       const amountWei = ethers.parseUnits(amountIn, decimals);
 
@@ -553,7 +577,7 @@ export function useContract() {
       });
     }
   });
-  
+
   // Debug logging
   if (typeof window !== 'undefined') {
     console.log('Contract Status:', {

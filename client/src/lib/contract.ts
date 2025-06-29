@@ -60,6 +60,19 @@ export function getContract(provider: ethers.Provider, signer?: ethers.Signer) {
   );
 }
 
+// Helper function to add supported tokens to the contract
+export async function addSupportedTokens(contract: ethers.Contract) {
+  try {
+    for (const [symbol, address] of Object.entries(TOKENS)) {
+      const tx = await contract.addSupportedToken(address);
+      await tx.wait();
+      console.log(`Added ${symbol} as supported token`);
+    }
+  } catch (error) {
+    console.error("Error adding supported tokens:", error);
+  }
+}
+
 export function formatEther(value: string | bigint): string {
   return ethers.formatEther(value);
 }
