@@ -11,7 +11,7 @@ import { TokenBalances } from "@/components/dashboard/token-balances";
 import { TokenDeposit } from "@/components/wallet/token-deposit";
 import { SwapExecutor } from "@/components/swap/swap-executor";
 import { EthPriceMonitor } from "@/components/dashboard/eth-price-monitor";
-import { Activity, CheckCircle, Clock, Trophy, Wallet, TrendingUp, Target, Zap } from "lucide-react";
+import { Activity, CheckCircle, Clock, Trophy, Wallet, TrendingUp, Target, Zap, Loader2 } from "lucide-react";
 import { formatAddress } from "@/lib/wallet";
 import { Link } from "wouter";
 
@@ -385,15 +385,45 @@ export default function Dashboard() {
                                 Estimated Cost: {intent.estimatedCost} ETH
                               </CardDescription>
                             </div>
-                            <Badge variant="outline" className="bg-green-100 text-green-800">
-                              <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                              Monitoring
-                            </Badge>
+                            <div className="flex items-center space-x-2">
+                              <Badge variant="outline" className="bg-green-100 text-green-800">
+                                <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+                                Monitoring
+                              </Badge>
+                              {intent.isActive && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleExecuteIntent(intent.id)}
+                                  disabled={executingIntentId === intent.id}
+                                  className="bg-blue-600 hover:bg-blue-700"
+                                >
+                                  {executingIntentId === intent.id ? (
+                                    <>
+                                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                                      Executing...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Zap className="mr-1 h-3 w-3" />
+                                      Execute
+                                    </>
+                                  )}
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         </CardHeader>
                         <CardContent>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">
-                            Created: {new Date(intent.timestamp * 1000).toLocaleDateString()}
+                          <div className="flex items-center justify-between">
+                            <div className="text-sm text-gray-600 dark:text-gray-400">
+                              Created: {new Date(intent.timestamp * 1000).toLocaleDateString()}
+                            </div>
+                            {!intent.isActive && (
+                              <Badge variant="secondary">
+                                <CheckCircle className="mr-1 h-3 w-3" />
+                                Completed
+                              </Badge>
+                            )}
                           </div>
                         </CardContent>
                       </Card>
