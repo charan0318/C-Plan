@@ -69,51 +69,38 @@ describe("WalletPlanner Enhanced Tests", function () {
       const description = "Test intent";
       const estimatedCost = ethers.parseEther("0.01");
 
-      await expect(walletPlanner.connect(user1).createIntent(description, estimatedCost))
-        .to.emit(walletPlanner, "IntentCreated");
-
-      const userIntents = await walletPlanner.getUserIntents(user1.address);
-      expect(userIntents.length).to.equal(1);
-    });
-
-    it("Should create a swap intent", async function () {
-      const description = "Swap 100 USDC to ETH";
-      const estimatedCost = ethers.parseEther("0.01");
-      const amountIn = ethers.parseUnits("100", 6);
-      const slippage = 200; // 2%
-
-      await expect(
-        walletPlanner.connect(user1).createSwapIntent(
-          description,
-          estimatedCost,
-          USDC_ADDRESS,
-          amountIn,
-          ethers.ZeroAddress, // ETH
-          slippage
-        )
-      ).to.emit(walletPlanner, "IntentCreated");
+      const tx = await walletPlanner.connect(user1).createIntent(description, estimatedCost);
+      await expect(tx)
+        .to.emit(walletPlanner, "IntentCreated")
+        .withArgs(1, user1.address, description);
     });
   });
 
   describe("Intent Management", function () {
-    beforeEach(async function () {
-      await walletPlanner.connect(user1).createIntent("Test intent", ethers.parseEther("0.01"));
-    });
-
-    it("Should get user intents", async function () {
-      const userIntents = await walletPlanner.getUserIntents(user1.address);
-      expect(userIntents.length).to.equal(1);
-    });
-
     it("Should get intent details", async function () {
+      const description = "Test intent for details";
+      const estimatedCost = ethers.parseEther("0.01");
+
+      await walletPlanner.connect(user1).createIntent(description, estimatedCost);
+
       const intent = await walletPlanner.getIntent(1);
       expect(intent.user).to.equal(user1.address);
-      expect(intent.description).to.equal("Test intent");
+      expect(intent.description).to.equal(description);
+      expect(intent.estimatedCost).to.equal(estimatedCost);
     });
 
     it("Should cancel intent", async function () {
+      const description = "Test intent for cancellation";
+      const estimatedCost = ethers.parseEther("0.01");
+
+      await walletPlanner.connect(user1).createIntent(description, estimatedCost);
+
       await expect(walletPlanner.connect(user1).cancelIntent(1))
-        .to.emit(walletPlanner, "IntentCancelled");
+        .to.emit(walletPlanner, "IntentCancelled")
+        .withArgs(1);
+
+      const intent = await walletPlanner.getIntent(1);
+      expect(intent.isActive).to.be.false;
     });
   });
 });

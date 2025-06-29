@@ -36,7 +36,7 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
         bool isActive;
     }
 
-    uint256 private _nextIntentId;
+    uint256 private _nextIntentId = 1;
     mapping(uint256 => Intent) public intents;
     mapping(address => uint256[]) public userIntents;
     mapping(address => mapping(address => uint256)) public userBalances;
@@ -102,7 +102,8 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
         require(supportedTokens[_tokenIn], "Token not supported");
         require(_slippageTolerance <= MAX_SLIPPAGE, "Slippage too high");
         // Remove balance requirement for testing
-        uint256 intentId = _nextIntentId++;
+        uint256 intentId = _nextIntentId;
+        _nextIntentId++;
         intents[intentId] = Intent(intentId, msg.sender, _description, _estimatedCost, block.timestamp, 0, false, false, _tokenIn, _amountIn, _tokenOut, _slippageTolerance > 0 ? _slippageTolerance : DEFAULT_SLIPPAGE, true);
         userIntents[msg.sender].push(intentId);
         emit IntentCreated(intentId, msg.sender, _description);
@@ -114,7 +115,8 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
         require(supportedTokens[_tokenIn], "Token not supported");
         require(_slippageTolerance <= MAX_SLIPPAGE, "Slippage too high");
         // Remove balance requirement for testing
-        uint256 intentId = _nextIntentId++;
+        uint256 intentId = _nextIntentId;
+        _nextIntentId++;
         intents[intentId] = Intent(intentId, msg.sender, _description, _estimatedCost, block.timestamp, _executionTime, false, true, _tokenIn, _amountIn, _tokenOut, _slippageTolerance > 0 ? _slippageTolerance : DEFAULT_SLIPPAGE, true);
         userIntents[msg.sender].push(intentId);
         emit IntentCreated(intentId, msg.sender, _description);
@@ -122,7 +124,8 @@ contract WalletPlanner is ERC721Base, AutomationCompatible {
     }
 
     function createIntent(string memory _description, uint256 _estimatedCost) external returns (uint256) {
-        uint256 intentId = _nextIntentId++;
+        uint256 intentId = _nextIntentId;
+        _nextIntentId++;
         intents[intentId] = Intent(intentId, msg.sender, _description, _estimatedCost, block.timestamp, 0, false, false, address(0), 0, address(0), 0, true);
         userIntents[msg.sender].push(intentId);
         emit IntentCreated(intentId, msg.sender, _description);
