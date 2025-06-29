@@ -14,7 +14,6 @@ import { EthPriceMonitor } from "@/components/dashboard/eth-price-monitor";
 import { Activity, CheckCircle, Clock, Trophy, Wallet, TrendingUp, Target, Zap } from "lucide-react";
 import { formatAddress } from "@/lib/wallet";
 import { Link } from "wouter";
-import { useToast } from "@/hooks/use-toast";
 
 export interface DashboardStats {
   activePlans: number;
