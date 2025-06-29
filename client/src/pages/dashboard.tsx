@@ -349,31 +349,57 @@ export default function Dashboard() {
                 <p className="mt-2 text-gray-600 dark:text-gray-400">Loading intents...</p>
               </div>
             ) : (
-              <div className="grid gap-4">
-                {userIntents.map((intent) => (
-                  <Card key={intent.id}>
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <CardTitle className="text-lg">{intent.description}</CardTitle>
-                          <CardDescription>
-                            Estimated Cost: {intent.estimatedCost} ETH
-                          </CardDescription>
-                        </div>
-                        <Badge variant="outline" className="bg-green-100 text-green-800">
-                          <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                          Monitoring
-                        </Badge>
+              <div className="space-y-4">
+                {userIntents.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Target size={48} className="mx-auto mb-4 text-gray-400" />
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                      No Intents Yet
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400 mb-4">
+                      Create automated swaps and DeFi strategies
+                    </p>
+                    <div className="space-y-2 max-w-md mx-auto">
+                      <div className="text-sm text-gray-500 space-y-1">
+                        <p>• Swap WETH ↔ ETH when price moves</p>
+                        <p>• Dollar cost average into ETH</p>
+                        <p>• Automated rebalancing strategies</p>
                       </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
-                        Created: {new Date(intent.timestamp * 1000).toLocaleDateString()}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                    </div>
+                    <Link href="/planner">
+                      <Button className="mt-4">
+                        <Zap className="mr-2 h-4 w-4" />
+                        Create First Intent
+                      </Button>
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="grid gap-4">
+                    {userIntents.map((intent) => (
+                      <Card key={intent.id}>
+                        <CardHeader>
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <CardTitle className="text-lg">{intent.description}</CardTitle>
+                              <CardDescription>
+                                Estimated Cost: {intent.estimatedCost} ETH
+                              </CardDescription>
+                            </div>
+                            <Badge variant="outline" className="bg-green-100 text-green-800">
+                              <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+                              Monitoring
+                            </Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">
+                            Created: {new Date(intent.timestamp * 1000).toLocaleDateString()}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}</div>
             )}
           </TabsContent>
 
