@@ -255,7 +255,8 @@ export function useContract() {
           // IMPORTANT: Also check ETH balance in contract (from DCA swaps)
           try {
             const ethInContract = await contract.getUserBalance(address, ethers.ZeroAddress);
-            balances['ETH_DEPOSITED'] = ethers.formatEther(ethInContract);
+            const ethBalance = parseFloat(ethers.formatEther(ethInContract));
+            balances['ETH_DEPOSITED'] = ethBalance.toString();
             console.log(`🎯 ETH earned from swaps in contract: ${balances['ETH_DEPOSITED']} ETH (raw: ${ethInContract.toString()})`);
           } catch (error) {
             console.error('❌ Error fetching ETH balance in contract:', error);
@@ -265,14 +266,19 @@ export function useContract() {
           // Also check WETH balance in contract (DCA swaps might output WETH)
           try {
             const wethInContract = await contract.getUserBalance(address, TOKENS.WETH);
+            const wethBalance = parseFloat(ethers.formatEther(wethInContract));
             const currentWethDeposited = parseFloat(balances['WETH_DEPOSITED'] || '0');
-            const wethFromSwaps = parseFloat(ethers.formatEther(wethInContract));
             
-            // If WETH in contract is higher than deposited, show the difference as earned ETH
-            if (wethFromSwaps > currentWethDeposited) {
-              const earnedEth = wethFromSwaps - currentWethDeposited;
-              balances['ETH_DEPOSITED'] = (parseFloat(balances['ETH_DEPOSITED']) + earnedEth).toString();
-              console.log(`🎯 Additional ETH from WETH swaps: ${earnedEth} ETH`);
+            // Update WETH balance to show total WETH in contract
+            balances['WETH_DEPOSITED'] = wethBalance.toString();
+            console.log(`🔄 Total WETH in contract: ${balances['WETH_DEPOSITED']} WETH (raw: ${wethInContract.toString()})`);
+            
+            // If WETH from swaps is more than originally deposited, add it to ETH display
+            if (wethBalance > currentWethDeposited) {
+              const earnedWeth = wethBalance - currentWethDeposited;
+              const currentEthBalance = parseFloat(balances['ETH_DEPOSITED'] || '0');
+              balances['ETH_DEPOSITED'] = (currentEthBalance + earnedWeth).toString();
+              console.log(`🎯 Adding ${earnedWeth} WETH as earned ETH. Total ETH shown: ${balances['ETH_DEPOSITED']}`);
             }
           } catch (error) {
             console.warn('⚠️ Could not fetch WETH balance for ETH calculation:', error);
