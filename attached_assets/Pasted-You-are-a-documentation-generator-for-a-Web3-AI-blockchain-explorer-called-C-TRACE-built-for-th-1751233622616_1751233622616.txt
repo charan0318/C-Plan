@@ -1,0 +1,78 @@
+You are a documentation generator for a Web3 AI blockchain explorer called **C-TRACE**, built for the **Chiliz Chain**. Your job is to create a beautiful, easy-to-navigate user documentation site — like what GitBook or Docusaurus offers — but fully embedded inside the main C-TRACE app.
+
+🎯 Goal:
+Generate complete user-facing documentation that is:
+- Clear and helpful for beginners
+- Includes working examples and copy-paste blocks
+- Has a clean and modern structure (GitBook-style)
+- Designed for **non-technical users**
+- Responsive and matches the existing app theme (dark, neon, futuristic)
+
+---
+
+📚 Documentation Structure:
+
+1. **Welcome**
+   - What is C-TRACE?
+   - Why Chiliz Chain?
+   - What makes this different from Etherscan?
+
+2. **Getting Started**
+   - How to use the search bar
+   - Connecting your wallet (if required)
+   - What types of inputs are supported (contract, wallet, txn hash, questions)
+   - Example prompts: 
+     - “Check balance of 0x...”
+     - “What does this transaction do?”
+     - “Show me details of this NFT collection”
+
+3. **Understanding the Output**
+   - What do the AI results mean?
+   - How to interpret token balances, contract details, decoded txns
+   - Copy/paste features
+
+4. **AI Superpowers**
+   - Supported prompt types
+   - Limitations (e.g., read-only data)
+   - Tips for better AI questions
+   - Live AI Examples section with a few test prompts
+
+5. **Feature Showcase**
+   - 🔍 Smart Search
+   - 💬 AI Prompt Analysis
+   - 📦 Contract Inspector
+   - 📊 Stats + Activity Cards
+   - 🌐 Spline 3D UI background
+   - 🚀 Responsive + futuristic design
+
+6. **Troubleshooting**
+   - Blank responses or failed AI
+   - Wallet not connecting
+   - Common error messages explained
+
+7. **What’s Next**
+   - Planned features (eg. gas insights, smart contract deployers, NFT scans, leaderboard)
+   - Submit feature requests
+
+8. **Connect with Us**
+   - Feedback form
+   - Email / Discord / Twitter handles
+   - “Built with ❤️ by Dexra”
+
+---
+
+🎨 Styling and Behavior:
+
+- Use Tailwind-styled or Markdown-friendly layout
+- Include collapsible side menu
+- Syntax highlighting for prompts
+- Add a sticky “Give Feedback” button
+- Responsive on mobile
+- Dark mode by default
+- Add animation on scroll / section load
+
+---
+
+✅ Output should be structured cleanly for easy integration in a Next.js or static export format (HTML or MDX).
+
+Please generate the full structure and fill out all pages with useful placeholder text, examples, and headers. Keep everything user-friendly, professional, and aligned with the C-TRACE mission.
