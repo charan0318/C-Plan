@@ -38,7 +38,14 @@ export const CONTRACT_CONFIG = {
 export const TOKENS = {
   USDC: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", // Sepolia USDC
   DAI: "0xFF34B3d4Aee8ddCd6F9AFFFB6Fe49bD371b8a357",   // Sepolia DAI
-  WETH: "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14"  // Sepolia WETH
+  WETH: "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14"  // Sepolia WETH (Confirmed)
+};
+
+// Token metadata for better handling
+export const TOKEN_METADATA = {
+  USDC: { decimals: 6, name: "USD Coin", symbol: "USDC" },
+  DAI: { decimals: 18, name: "Dai Stablecoin", symbol: "DAI" },
+  WETH: { decimals: 18, name: "Wrapped Ether", symbol: "WETH" }
 };
 
 export function getContract(provider: ethers.Provider, signer?: ethers.Signer) {
