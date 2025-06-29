@@ -467,6 +467,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get intent monitoring status
+  app.get('/api/intents/:id/status', async (req, res) => {
+    try {
+      const intentId = parseInt(req.params.id);
+      const intent = await storage.getIntent(intentId);
+      
+      if (!intent) {
+        return res.status(404).json({ error: 'Intent not found' });
+      }
+
+      // Mock current market conditions
+      const currentETH = 2341; // Current ETH price in USD
+      const targetPrice = 1000; // Your trigger price
+      
+      const status = {
+        isMonitoring: intent.isActive,
+        currentConditions: {
+          ethPrice: currentETH,
+          targetPrice: targetPrice,
+          conditionMet: currentETH < targetPrice
+        },
+        nextCheck: new Date(Date.now() + 30000),
+        lastCheck: new Date(),
+        estimatedExecution: currentETH < targetPrice ? 'Immediate' : 'When ETH drops below $1000'
+      };
+      
+      res.json(status);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to get intent status' });
+    }
+  });
+
   // Get dashboard stats
   app.get('/api/dashboard/stats', async (req, res) => {
     try {

@@ -146,13 +146,13 @@ export default function Dashboard() {
     },
     refetchInterval: 1000 // Refetch every second to update NFT count
   });
-  
+
   const walletState = useWallet();
   const { address, isConnected } = walletState;
   const { toast } = useToast();
 
   const [executingIntentId, setExecutingIntentId] = useState<number | null>(null);
-  
+
   const { data: stats = { executedToday: 0 } } = useQuery({
     queryKey: ["/api/dashboard/stats"],
     queryFn: async () => {
@@ -181,7 +181,7 @@ export default function Dashboard() {
       queryClient.invalidateQueries({ queryKey: ["/api/intents"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/nfts"] });
-      
+
       // Show success message with NFT info
       if (data.nftMinted) {
         toast({
@@ -354,7 +354,15 @@ export default function Dashboard() {
                             Estimated Cost: {intent.estimatedCost} ETH
                           </CardDescription>
                         </div>
-                        <Badge variant="outline">Active</Badge>
+                        <div className="flex flex-col items-end space-y-2">
+                          <Badge variant="outline" className="bg-green-100 text-green-800">
+                            <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+                            Monitoring
+                          </Badge>
+                          <div className="text-xs text-gray-500">
+                            Checking every 30s
+                          </div>
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent>
