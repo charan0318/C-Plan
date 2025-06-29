@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, Pause, Play, Trash2, Coins, Send, Bell, ArrowRightLeft } from "lucide-react";
+import { Eye, Pause, Play, Trash2, Coins, Send, Bell, ArrowRightLeft, Zap } from "lucide-react";
 import { format } from "date-fns";
 import type { Intent } from "@/types/intent";
 
@@ -81,6 +81,59 @@ export function PlansTable() {
   const handleDelete = (id: number) => {
     if (confirm("Are you sure you want to delete this automation plan?")) {
       deleteIntentMutation.mutate(id);
+    }
+  };
+
+  const executeIntentMutation = useMutation({
+    mutationFn: async (intentId: number) => {
+      const response = await fetch(`/api/intents/${intentId}/execute`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          walletAddress: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || data.error || "Failed to execute intent");
+      }
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/intents"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      
+      if (data.success && data.executed) {
+        toast({
+          title: "Intent Executed Successfully! 🎉",
+          description: data.message || "Your automation completed successfully",
+          duration: 5000,
+        });
+      } else if (data.success === false) {
+        toast({
+          title: "Execution Conditions Not Met",
+          description: data.message || "Waiting for execution conditions to be satisfied",
+          variant: "default",
+          duration: 4000,
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Execution Failed ❌",
+        description: error.message || "Failed to execute intent",
+        variant: "destructive",
+        duration: 6000,
+      });
+    }
+  });
+
+  const handleExecuteIntent = async (intentId: number) => {
+    try {
+      await executeIntentMutation.mutateAsync(intentId);
+    } catch (error) {
+      console.error("Failed to execute intent:", error);
     }
   };
 
@@ -238,6 +291,16 @@ export function PlansTable() {
                   </TableCell>
                   <TableCell>
                     <div className="flex space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleExecuteIntent(intent.id)}
+                        disabled={executeIntentMutation.isPending}
+                        className="text-green-600 hover:text-green-700"
+                        title="Execute Intent"
+                      >
+                        <Zap size={16} />
+                      </Button>
                       <Link href={`/intent/${intent.id}`}>
                         <Button variant="ghost" size="icon" className="text-primary hover:text-primary-dark">
                           <Eye size={16} />

@@ -26,6 +26,13 @@ export default function IntentDetails() {
 
   const { data: intent, isLoading, error } = useQuery<IntentWithHistory>({
     queryKey: ["/api/intents", intentId],
+    queryFn: async () => {
+      const response = await fetch(`/api/intents/${intentId}`);
+      if (!response.ok) {
+        throw new Error("Intent not found");
+      }
+      return response.json();
+    },
     enabled: !!intentId,
   });
 

@@ -82,19 +82,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get intents for user
+  // Get user intents
   app.get("/api/intents", async (req, res) => {
     try {
-      // Create a default user if none exists
-      let user = await storage.getUserByUsername("default_user");
-      if (!user) {
-        user = await storage.createUser({
-          username: "default_user",
-          password: "temp_password"
-        });
-      }
-
-      const intents = await storage.getIntents(user.id);
+      const userId = 1; // Mock user ID for demo
+      const intents = await storage.getIntents(userId);
       res.json(intents);
     } catch (error) {
       console.error("Error fetching intents:", error);
@@ -102,7 +94,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get specific intent details
+  // Get single intent with history
   app.get("/api/intents/:id", async (req, res) => {
     try {
       const intentId = parseInt(req.params.id);
@@ -119,7 +111,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         executionHistory
       });
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch intent details" });
+      console.error("Error fetching intent:", error);
+      res.status(500).json({ error: "Failed to fetch intent" });
     }
   });
 
@@ -817,7 +810,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: 'SUCCESS',
         result: `${intent.action} executed: ${intent.amount} ${intent.token}${intent.elizaParsed?.receiver ? ` to ${intent.elizaParsed.receiver}` : ''}`,
         gasUsed: (Math.random() * 50000 + 21000).toFixed(0),
-        transactionHash: `0x${Math.random().toString(16).substr(2, 64)}`,
+        transactionHash: `0x${Math.random().toString(16).substr(2, 6, 64)}`,
         executedAt: new Date()
       };
 
