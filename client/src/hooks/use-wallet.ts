@@ -59,7 +59,10 @@ export function useWallet() {
         const chainId = Number(network.chainId);
 
         // Check if we're on Sepolia testnet
-        if (chainId !== 11155111) {
+        const network = await provider.getNetwork();
+        const currentChainId = Number(network.chainId);
+        
+        if (currentChainId !== 11155111) {
           try {
             // Try to switch to Sepolia
             await window.ethereum.request({
@@ -74,14 +77,20 @@ export function useWallet() {
                 params: [{
                   chainId: '0xaa36a7',
                   chainName: 'Sepolia Test Network',
-                  rpcUrls: ['https://sepolia.infura.io/v3/'],
+                  rpcUrls: ['https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161'],
                   blockExplorerUrls: ['https://sepolia.etherscan.io/'],
                   nativeCurrency: {
                     name: 'Sepolia ETH',
-                    symbol: 'ETH',
+                    symbol: 'sepETH',
                     decimals: 18
                   }
                 }]
+              });
+              
+              // After adding, try to switch again
+              await window.ethereum.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId: '0xaa36a7' }],
               });
             } else {
               throw switchError;
@@ -89,18 +98,24 @@ export function useWallet() {
           }
         }
 
+        // Get final network info after potential switching
+        const finalNetwork = await provider.getNetwork();
+        const finalChainId = Number(finalNetwork.chainId);
+        const finalSigner = await provider.getSigner();
+        const finalAddress = await finalSigner.getAddress();
+
         await connectWalletMutation.mutateAsync({
-          address,
-          chainId: 11155111 // Always use Sepolia
+          address: finalAddress,
+          chainId: finalChainId
         });
 
         setWalletState({
           isConnected: true,
-          address,
-          chainId: 11155111,
+          address: finalAddress,
+          chainId: finalChainId,
           isConnecting: false,
           provider,
-          signer
+          signer: finalSigner
         });
       } else {
         // Fallback to mock connection for demo

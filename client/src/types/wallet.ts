@@ -23,16 +23,16 @@ export const SUPPORTED_CHAINS: SupportedChain[] = [
     isTestnet: true
   },
   {
-    id: 80001,
-    name: "polygon-mumbai",
-    displayName: "Polygon Mumbai",
+    id: 80002,
+    name: "polygon-amoy",
+    displayName: "Polygon Amoy",
     color: "#8247E5",
     isTestnet: true
   },
   {
-    id: 421613,
-    name: "arbitrum-goerli",
-    displayName: "Arbitrum Goerli",
+    id: 421614,
+    name: "arbitrum-sepolia",
+    displayName: "Arbitrum Sepolia",
     color: "#28A0F0",
     isTestnet: true
   }

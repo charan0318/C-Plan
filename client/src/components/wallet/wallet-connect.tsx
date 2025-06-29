@@ -13,12 +13,15 @@ export function WalletConnect() {
       await connectWallet();
       toast({
         title: "Wallet Connected",
-        description: "Successfully connected to your wallet",
+        description: "Successfully connected to Sepolia testnet",
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Wallet connection error:", error);
       toast({
         title: "Connection Failed",
-        description: "Failed to connect wallet. Please try again.",
+        description: error?.message?.includes("User rejected") 
+          ? "Connection was rejected by user" 
+          : "Failed to connect wallet. Please ensure you have MetaMask installed and try again.",
         variant: "destructive",
       });
     }
