@@ -178,7 +178,11 @@ export default function Dashboard() {
     mutationFn: async (intentId: number) => {
       const response = await fetch(`/api/intents/${intentId}/execute`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" }
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          walletAddress: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", // Default hardhat account
+          // In production, get from connected wallet
+        })
       });
       if (!response.ok) throw new Error("Failed to execute intent");
       return response.json();
