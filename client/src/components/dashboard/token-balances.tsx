@@ -19,7 +19,7 @@ export function TokenBalances() {
   const formatBalance = (balance: string) => {
     const num = parseFloat(balance);
     if (num === 0) return '0';
-    if (num < 0.001) return '< 0.001';
+    if (num < 0.001 && num > 0) return '< 0.001';
     return num.toFixed(4);
   };
 
@@ -37,6 +37,10 @@ export function TokenBalances() {
   // Separate wallet and contract balances
   const walletBalances = Object.entries(tokenBalances || {}).filter(([symbol]) => !symbol.includes('_DEPOSITED'));
   const contractBalances = Object.entries(tokenBalances || {}).filter(([symbol]) => symbol.includes('_DEPOSITED'));
+  
+  // Debug logging
+  console.log('Token balances in component:', tokenBalances);
+  console.log('Contract balances:', contractBalances);
 
   return (
     <Card>
@@ -91,6 +95,9 @@ export function TokenBalances() {
                     <div className="text-right">
                       <div className="font-mono text-sm font-bold">
                         {formatBalance(balance)}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Raw: {balance}
                       </div>
                       <Badge variant="outline" className="text-xs">
                         Contract
