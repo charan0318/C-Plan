@@ -37,7 +37,7 @@ export function TokenBalances() {
   // Separate wallet and contract balances
   const walletBalances = Object.entries(tokenBalances || {}).filter(([symbol]) => !symbol.includes('_DEPOSITED'));
   const contractBalances = Object.entries(tokenBalances || {}).filter(([symbol]) => symbol.includes('_DEPOSITED'));
-  
+
   // Debug logging
   console.log('Token balances in component:', tokenBalances);
   console.log('Contract balances:', contractBalances);

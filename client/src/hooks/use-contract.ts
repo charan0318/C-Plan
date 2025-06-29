@@ -251,6 +251,16 @@ export function useContract() {
               balances[`${symbol}_DEPOSITED`] = '0';
             }
           }
+
+          // IMPORTANT: Also check ETH balance in contract (from DCA swaps)
+          try {
+            const ethInContract = await contract.getUserBalance(address, ethers.ZeroAddress);
+            balances['ETH_DEPOSITED'] = ethers.formatEther(ethInContract);
+            console.log(`🎯 ETH earned from swaps in contract: ${balances['ETH_DEPOSITED']} ETH (raw: ${ethInContract.toString()})`);
+          } catch (error) {
+            console.error('❌ Error fetching ETH balance in contract:', error);
+            balances['ETH_DEPOSITED'] = '0';
+          }
         } catch (error) {
           console.error('❌ Error fetching deposited balances from contract:', error);
         }
