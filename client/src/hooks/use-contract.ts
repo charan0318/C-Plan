@@ -252,39 +252,24 @@ export function useContract() {
             }
           }
 
-          // IMPORTANT: Also check ETH balance in contract (from DCA swaps)
+          // Check ETH balance in contract (from DCA swaps)
           try {
             const ethInContract = await contract.getUserBalance(address, ethers.ZeroAddress);
-            const ethBalance = parseFloat(ethers.formatEther(ethInContract));
-            balances['ETH_DEPOSITED'] = ethBalance.toString();
-            console.log(`🎯 ETH earned from swaps in contract: ${balances['ETH_DEPOSITED']} ETH (raw: ${ethInContract.toString()})`);
-            
-            // Force refresh if balance is detected but showing as 0
-            if (ethInContract > 0n && ethBalance > 0) {
-              console.log(`✅ Found ETH balance in contract: ${ethBalance} ETH`);
-            }
+            balances['ETH_DEPOSITED'] = ethers.formatEther(ethInContract);
+            console.log(`🎯 ETH in contract: ${balances['ETH_DEPOSITED']} ETH (raw: ${ethInContract.toString()})`);
           } catch (error) {
             console.error('❌ Error fetching ETH balance in contract:', error);
             balances['ETH_DEPOSITED'] = '0';
           }
 
-          // Also check WETH balance in contract (DCA swaps might output WETH)
+          // Check WETH balance in contract separately
           try {
             const wethInContract = await contract.getUserBalance(address, TOKENS.WETH);
-            const wethBalance = parseFloat(ethers.formatEther(wethInContract));
-            
-            // Update WETH balance to show total WETH in contract
-            balances['WETH_DEPOSITED'] = wethBalance.toString();
-            console.log(`🔄 Total WETH in contract: ${balances['WETH_DEPOSITED']} WETH (raw: ${wethInContract.toString()})`);
-            
-            // Add WETH balance to ETH display since they're equivalent
-            if (wethBalance > 0) {
-              const currentEthBalance = parseFloat(balances['ETH_DEPOSITED'] || '0');
-              balances['ETH_DEPOSITED'] = (currentEthBalance + wethBalance).toString();
-              console.log(`🎯 Total ETH+WETH earned: ${balances['ETH_DEPOSITED']} (${currentEthBalance} ETH + ${wethBalance} WETH)`);
-            }
+            balances['WETH_DEPOSITED'] = ethers.formatEther(wethInContract);
+            console.log(`🔄 WETH in contract: ${balances['WETH_DEPOSITED']} WETH (raw: ${wethInContract.toString()})`);
           } catch (error) {
-            console.warn('⚠️ Could not fetch WETH balance for ETH calculation:', error);
+            console.error('❌ Error fetching WETH balance in contract:', error);
+            balances['WETH_DEPOSITED'] = '0';
           }
         } catch (error) {
           console.error('❌ Error fetching deposited balances from contract:', error);
