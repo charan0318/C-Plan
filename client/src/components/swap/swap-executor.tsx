@@ -127,12 +127,64 @@ export function SwapExecutor() {
     return num.toFixed(4);
   };
 
-  // Placeholder function for test DCA swap - implement actual logic in contract hook
+  // Test DCA swap function - swaps 0.5 USDC for WETH
   const handleTestDCASwap = async () => {
-    toast({
-      title: "Test DCA Swap",
-      description: "This function is not implemented yet.  Check back soon!",
-    });
+    try {
+      const usdcBalance = parseFloat(getContractBalance('USDC'));
+      
+      if (usdcBalance < 0.5) {
+        toast({
+          title: "Insufficient USDC",
+          description: `You need at least 0.5 USDC but only have ${usdcBalance.toFixed(4)} USDC in contract`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Starting DCA Swap",
+        description: "Swapping 0.5 USDC → WETH...",
+      });
+
+      const result = await executeSwap({
+        tokenIn: 'USDC',
+        amountIn: '0.5',
+        tokenOut: 'WETH',
+        slippage: 300 // 3% slippage
+      });
+
+      toast({
+        title: "DCA Swap Initiated! 🎯",
+        description: `Swapping 0.5 USDC → WETH. TX: ${result.hash.slice(0, 10)}...`,
+      });
+
+      // Wait for confirmation
+      if (provider) {
+        const receipt = await provider.waitForTransaction(result.hash);
+        if (receipt?.status === 1) {
+          toast({
+            title: "DCA Swap Successful! 🎉",
+            description: "0.5 USDC successfully swapped for WETH!",
+          });
+        }
+      }
+
+    } catch (error: any) {
+      console.error("DCA swap failed:", error);
+      
+      let errorMessage = "DCA swap failed";
+      if (error.message.includes("INSUFFICIENT_LIQUIDITY")) {
+        errorMessage = "Insufficient liquidity on Sepolia testnet for USDC/WETH pair";
+      } else if (error.message.includes("INVALID_PATH")) {
+        errorMessage = "USDC/WETH trading pair not available on Sepolia";
+      }
+
+      toast({
+        title: "DCA Swap Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
   };
 
   return (
