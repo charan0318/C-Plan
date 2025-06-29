@@ -6,7 +6,7 @@ async function main() {
   console.log("Testing Enhanced WalletPlanner with Uniswap integration...");
 
   // Contract address (update after deployment)
-  const contractAddress = "0xCA0d255BC0c66E3dDD974EA5E260E690d17c22aa"; // Update this
+  const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3"; // Updated with deployed address
   
   const [signer] = await ethers.getSigners();
   console.log("Testing with account:", signer.address);

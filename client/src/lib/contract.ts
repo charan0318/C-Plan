@@ -2,7 +2,7 @@ import { ethers } from "ethers";
 
 // Contract configuration
 export const CONTRACT_CONFIG = {
-  address: "0xCA0d255BC0c66E3dDD974EA5E260E690d17c22aa", // Enhanced WalletPlanner address
+  address: "0x5FbDB2315678afecb367f032d93F642f64180aa3", // Enhanced WalletPlanner address
   abi: [
     // Legacy functions
     "function createIntent(string memory description, uint256 estimatedCost) external returns (uint256)",
