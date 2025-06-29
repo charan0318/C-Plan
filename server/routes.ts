@@ -216,7 +216,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               "function executeSwap(address tokenIn, uint256 amountIn, address tokenOut, address recipient, uint256 slippageTolerance) external returns (uint256)",
               "function getUserBalance(address user, address token) external view returns (uint256)",
               "function depositToken(address token, uint256 amount) external",
-              "function getSwapEstimate(address tokenIn, uint256 amountIn, address tokenOut) external view returns (uint256)"
+              "function getSwapEstimate(address tokenIn, uint256 amountIn, address tokenOut) external view returns (uint256)",
+              "function addSupportedToken(address token) external"
             ];
 
             const contract = new ethers.Contract(contractAddress, contractABI, signer);
@@ -233,18 +234,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
             console.log("Contract loaded, proceeding with swap execution...");
 
-            // First, ensure tokens are supported in the contract
+            // First, let's try a simple contract health check
             try {
-              console.log("Adding supported tokens to contract...");
-              const addUsdcTx = await contract.addSupportedToken(USDC_ADDRESS);
-              await addUsdcTx.wait();
-              console.log("USDC added as supported token");
+              console.log("Testing contract connectivity...");
+              console.log("Contract address:", contractAddress);
+              console.log("Signer address:", signer.address);
 
-              const addWethTx = await contract.addSupportedToken(WETH_ADDRESS);
-              await addWethTx.wait();
-              console.log("WETH added as supported token");
-            } catch (addTokenError) {
-              console.log("Note: Could not add supported tokens (may already be added):", addTokenError.message);
+              // Check if the contract exists
+              const code = await signer.provider.getCode(contractAddress);
+              if (code === '0x') {
+                throw new Error("Contract not deployed at this address");
+              }
+              console.log("Contract exists and is deployed");
+            } catch (healthError) {
+              console.error("Contract health check failed:", healthError);
+              throw healthError;
             }
 
             // Check user's USDC balance in contract
@@ -267,20 +271,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
               throw new Error(`Swap not possible: ${estimateError.message}`);
             }
 
-            // Execute the swap: USDC → WETH (keep earned WETH in contract)
+            // Execute the swap
             console.log("Executing swap with params:", {
               tokenIn: USDC_ADDRESS,
               amountIn: usdcAmount.toString(),
               tokenOut: WETH_ADDRESS,
-              recipient: contractAddress,
+              recipient: signer.address,
               slippage: 300
             });
+
+            // Try to call the function statically first to get better error info
+            try {
+              console.log("Testing static call first...");
+              await contract.executeSwap.staticCall(
+                USDC_ADDRESS,
+                usdcAmount,
+                WETH_ADDRESS,
+                signer.address,
+                300
+              );
+              console.log("Static call successful, proceeding with gas estimation...");
+            } catch (staticError) {
+              console.log("Static call failed:", staticError.message);
+              if (staticError.reason) {
+                console.log("Revert reason:", staticError.reason);
+              }
+              throw new Error(`Contract execution would fail: ${staticError.reason || staticError.message}`);
+            }
+
+            const gasEstimate = await contract.executeSwap.estimateGas(
+              USDC_ADDRESS,
+              usdcAmount,
+              WETH_ADDRESS,
+              signer.address,
+              300
+            );
 
             const tx = await contract.executeSwap(
               USDC_ADDRESS,    // tokenIn (USDC)
               usdcAmount,      // amountIn (USDC amount with 6 decimals)
               WETH_ADDRESS,    // tokenOut (WETH)
-              contractAddress, // recipient (keep earned WETH in contract!)
+              signer.address, // recipient (keep earned WETH in contract!)
               300              // 3% slippage tolerance
             );
 
@@ -312,7 +343,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           } catch (contractError) {
             console.error("❌ Blockchain execution failed:", contractError);
-            
+
             return res.status(400).json({
               success: false,
               executed: false,
@@ -393,7 +424,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         } catch (contractError) {
           console.error("❌ Blockchain execution failed:", contractError);
-          
+
           // Return early with failure for contract errors
           return res.status(400).json({
             success: false,
@@ -494,7 +525,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         DAI_DEPOSITED: '0',
         WETH_DEPOSITED: '0'
       };
-      
+
       console.log('📊 Serving token balances:', balances);
       res.json(balances);
     } catch (error) {
