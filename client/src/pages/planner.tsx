@@ -15,7 +15,7 @@ import { Link } from "wouter";
 
 export default function Planner() {
   const { createIntent, isTransactionPending, canInteract } = useContract();
-  const { isConnected } = useWallet();
+  const { isConnected, address } = useWallet();
   const { toast } = useToast();
 
   const [description, setDescription] = useState("");

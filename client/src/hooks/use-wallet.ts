@@ -22,7 +22,7 @@ export function useWallet() {
 
   const queryClient = useQueryClient();
 
-  // Fetch wallet connections - only when we have a potential connection
+  // Fetch wallet connections - always enable but handle empty state
   const { data: connections = [] } = useQuery<WalletConnection[]>({
     queryKey: ["/api/wallet/connections"],
     queryFn: async () => {
@@ -30,7 +30,6 @@ export function useWallet() {
       if (!response.ok) throw new Error("Failed to fetch wallet connections");
       return response.json();
     },
-    enabled: walletState.isConnected, // Enable when connected
     retry: 1,
     staleTime: 5 * 60 * 1000
   });

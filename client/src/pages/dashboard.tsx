@@ -25,6 +25,7 @@ export interface Intent {
 }
 
 export default function Dashboard() {
+  const contractState = useContract();
   const { 
     userIntents, 
     nftBalance, 
@@ -33,8 +34,10 @@ export default function Dashboard() {
     executeIntent,
     isTransactionPending,
     canInteract 
-  } = useContract();
-  const { address, isConnected } = useWallet();
+  } = contractState;
+  
+  const walletState = useWallet();
+  const { address, isConnected } = walletState;
 
   const [executingIntentId, setExecutingIntentId] = useState<number | null>(null);
   const [intents, setIntents] = useState<Intent[]>([]);
