@@ -94,7 +94,7 @@ export function SwapExecutor() {
       if (error.message.includes("INVALID_PATH")) {
         errorMessage = "Invalid swap path - this token pair may not be supported on Sepolia testnet";
       } else if (error.message.includes("INSUFFICIENT_LIQUIDITY")) {
-        errorMessage = "Insufficient liquidity for this swap on Sepolia testnet";
+        errorMessage = "Insufficient liquidity for this swap on Sepolia testnet for USDC/WETH pair";
       } else if (error.message.includes("execution reverted")) {
         errorMessage = "Swap failed - check token balances and try again";
       }
@@ -127,15 +127,15 @@ export function SwapExecutor() {
     return num.toFixed(4);
   };
 
-  // Test DCA swap function - swaps 0.5 USDC for WETH
+  // Test DCA swap function - swaps 0.1 USDC for WETH
   const handleTestDCASwap = async () => {
     try {
       const usdcBalance = parseFloat(getContractBalance('USDC'));
-      
-      if (usdcBalance < 0.5) {
+
+      if (usdcBalance < 0.1) {
         toast({
           title: "Insufficient USDC",
-          description: `You need at least 0.5 USDC but only have ${usdcBalance.toFixed(4)} USDC in contract`,
+          description: `You need at least 0.1 USDC but only have ${usdcBalance.toFixed(4)} USDC in contract`,
           variant: "destructive",
         });
         return;
@@ -143,19 +143,19 @@ export function SwapExecutor() {
 
       toast({
         title: "Starting DCA Swap",
-        description: "Swapping 0.5 USDC → WETH...",
+        description: "Swapping 0.1 USDC → WETH...",
       });
 
       const result = await executeSwap({
         tokenIn: 'USDC',
-        amountIn: '0.5',
+        amountIn: '0.1',
         tokenOut: 'WETH',
         slippage: 300 // 3% slippage
       });
 
       toast({
         title: "DCA Swap Initiated! 🎯",
-        description: `Swapping 0.5 USDC → WETH. TX: ${result.hash.slice(0, 10)}...`,
+        description: `Swapping 0.1 USDC → WETH. TX: ${result.hash.slice(0, 10)}...`,
       });
 
       // Wait for confirmation
@@ -164,14 +164,14 @@ export function SwapExecutor() {
         if (receipt?.status === 1) {
           toast({
             title: "DCA Swap Successful! 🎉",
-            description: "0.5 USDC successfully swapped for WETH!",
+            description: "0.1 USDC successfully swapped for WETH!",
           });
         }
       }
 
     } catch (error: any) {
       console.error("DCA swap failed:", error);
-      
+
       let errorMessage = "DCA swap failed";
       if (error.message.includes("INSUFFICIENT_LIQUIDITY")) {
         errorMessage = "Insufficient liquidity on Sepolia testnet for USDC/WETH pair";
@@ -357,7 +357,7 @@ export function SwapExecutor() {
               <span className="text-sm font-medium text-green-800 dark:text-green-200">Test DCA Functionality</span>
               <Button
                 onClick={handleTestDCASwap}
-                disabled={isExecutingSwap || parseFloat(getContractBalance('USDC')) < 0.5}
+                disabled={isExecutingSwap || parseFloat(getContractBalance('USDC')) < 0.1}
                 size="sm"
                 variant="outline"
                 className="bg-green-50 border-green-300"
@@ -368,7 +368,7 @@ export function SwapExecutor() {
                     Swapping...
                   </>
                 ) : (
-                  "Swap 0.5 USDC → WETH"
+                  "Swap 0.1 USDC → WETH"
                 )}
               </Button>
             </div>
