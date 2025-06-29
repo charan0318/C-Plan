@@ -261,6 +261,22 @@ export function useContract() {
             console.error('❌ Error fetching ETH balance in contract:', error);
             balances['ETH_DEPOSITED'] = '0';
           }
+
+          // Also check WETH balance in contract (DCA swaps might output WETH)
+          try {
+            const wethInContract = await contract.getUserBalance(address, TOKENS.WETH);
+            const currentWethDeposited = parseFloat(balances['WETH_DEPOSITED'] || '0');
+            const wethFromSwaps = parseFloat(ethers.formatEther(wethInContract));
+            
+            // If WETH in contract is higher than deposited, show the difference as earned ETH
+            if (wethFromSwaps > currentWethDeposited) {
+              const earnedEth = wethFromSwaps - currentWethDeposited;
+              balances['ETH_DEPOSITED'] = (parseFloat(balances['ETH_DEPOSITED']) + earnedEth).toString();
+              console.log(`🎯 Additional ETH from WETH swaps: ${earnedEth} ETH`);
+            }
+          } catch (error) {
+            console.warn('⚠️ Could not fetch WETH balance for ETH calculation:', error);
+          }
         } catch (error) {
           console.error('❌ Error fetching deposited balances from contract:', error);
         }
