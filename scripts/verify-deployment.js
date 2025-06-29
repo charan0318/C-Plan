@@ -14,20 +14,35 @@ async function main() {
   console.log("- Balance:", ethers.formatEther(await ethers.provider.getBalance(signer.address)), "ETH\n");
 
   try {
+    // First, check if there's code at the address
+    const code = await ethers.provider.getCode(contractAddress);
+    if (code === "0x") {
+      console.log("❌ No contract found at address:", contractAddress);
+      console.log("The contract may not be deployed or the address is incorrect.");
+      return;
+    }
+
+    console.log("✅ Contract code found at address");
+
     // Get contract instance
     const WalletPlanner = await ethers.getContractFactory("WalletPlanner");
     const contract = WalletPlanner.attach(contractAddress);
 
-    // Verify basic contract info
+    // Verify basic contract info  with error handling
     console.log("✅ Contract Verification:");
-    const name = await contract.name();
-    const symbol = await contract.symbol();
-    const owner = await contract.owner();
+    try {
+      const name = await contract.name();
+      const symbol = await contract.symbol();
+      const owner = await contract.owner();
 
-    console.log("- Name:", name);
-    console.log("- Symbol:", symbol);
-    console.log("- Owner:", owner);
-
+      console.log("- Name:", name);
+      console.log("- Symbol:", symbol);
+      console.log("- Owner:", owner);
+    } catch (contractError) {
+      console.log("❌ Error calling contract functions:", contractError.message);
+      console.log("This might indicate the contract ABI doesn't match the deployed contract.");
+      return;
+    }
     // Verify supported tokens
     console.log("\n✅ Supported Tokens:");
     const USDC = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
