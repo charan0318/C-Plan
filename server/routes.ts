@@ -354,13 +354,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Get dashboard stats
   app.get('/api/dashboard/stats', (req, res) => {
-    const activePlans = (storage.intents || []).filter(i => i.isActive).length;
+    // Ensure storage.intents is an array
+    if (!Array.isArray(storage.intents)) {
+      storage.intents = [];
+    }
+    
+    const activePlans = storage.intents.filter(i => i.isActive).length;
     const today = new Date().toDateString();
-    const executedToday = (storage.executionHistory || []).filter(e => 
+    
+    // Ensure storage.executionHistory is an array
+    if (!Array.isArray(storage.executionHistory)) {
+      storage.executionHistory = [];
+    }
+    
+    const executedToday = storage.executionHistory.filter(e => 
       e.status === 'SUCCESS' && new Date(e.executedAt).toDateString() === today
     ).length;
 
-    const totalValue = (storage.intents || []).reduce((sum, intent) => {
+    const totalValue = storage.intents.reduce((sum, intent) => {
       return sum + (parseFloat(intent.amount) || 0);
     }, 0);
 

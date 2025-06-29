@@ -30,7 +30,7 @@ export function useWallet() {
       if (!response.ok) throw new Error("Failed to fetch wallet connections");
       return response.json();
     },
-    enabled: false, // Disable automatic fetching for now
+    enabled: walletState.isConnected, // Enable when connected
     retry: 1,
     staleTime: 5 * 60 * 1000
   });

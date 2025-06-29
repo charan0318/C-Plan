@@ -10,23 +10,23 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  
+
   // Wallet operations
   getWalletConnections(userId: number): Promise<WalletConnection[]>;
   createWalletConnection(connection: InsertWalletConnection): Promise<WalletConnection>;
   updateWalletConnection(id: number, updates: Partial<WalletConnection>): Promise<WalletConnection | undefined>;
-  
+
   // Intent operations
   getIntents(userId: number): Promise<Intent[]>;
   getIntent(id: number): Promise<Intent | undefined>;
   createIntent(intent: InsertIntent): Promise<Intent>;
   updateIntent(id: number, updates: Partial<Intent>): Promise<Intent | undefined>;
   deleteIntent(id: number): Promise<boolean>;
-  
+
   // Execution history operations
   getExecutionHistory(intentId: number): Promise<ExecutionHistory[]>;
   createExecutionHistory(history: InsertExecutionHistory): Promise<ExecutionHistory>;
-  
+
   // Chat operations
   getChatMessages(userId: number): Promise<ChatMessage[]>;
   createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
@@ -47,7 +47,7 @@ export class MemStorage implements IStorage {
     this.executionHistory = new Map();
     this.chatMessages = new Map();
     this.currentId = 1;
-    
+
     // Initialize with mock data for demonstration
     this.initializeMockData();
   }
@@ -169,7 +169,7 @@ export class MemStorage implements IStorage {
   async updateWalletConnection(id: number, updates: Partial<WalletConnection>): Promise<WalletConnection | undefined> {
     const connection = this.walletConnections.get(id);
     if (!connection) return undefined;
-    
+
     const updated = { ...connection, ...updates };
     this.walletConnections.set(id, updated);
     return updated;
@@ -212,7 +212,7 @@ export class MemStorage implements IStorage {
   async updateIntent(id: number, updates: Partial<Intent>): Promise<Intent | undefined> {
     const intent = this.intents.get(id);
     if (!intent) return undefined;
-    
+
     const updated = { ...intent, ...updates, updatedAt: new Date() };
     this.intents.set(id, updated);
     return updated;
