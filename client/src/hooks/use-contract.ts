@@ -215,7 +215,7 @@ export function useContract() {
   });
 
   // Get token balances - fetch directly from token contracts
-  const { data: tokenBalances = {} } = useQuery({
+  const { data: tokenBalances = {}, refetch: refetchBalances } = useQuery({
     queryKey: ['token-balances', address],
     queryFn: async () => {
       if (!walletState.provider || !address) return {};
@@ -231,16 +231,26 @@ export function useContract() {
         balances.ETH = '0';
       }
 
-      // Get token balances directly from token contracts
+      // Get token balances directly from token contracts with proper decimals
       for (const [symbol, tokenAddress] of Object.entries(TOKENS)) {
         try {
           const tokenContract = new ethers.Contract(
             tokenAddress,
-            ['function balanceOf(address) external view returns (uint256)'],
+            [
+              'function balanceOf(address) external view returns (uint256)',
+              'function decimals() external view returns (uint8)'
+            ],
             walletState.provider
           );
-          const balance = await tokenContract.balanceOf(address);
-          balances[symbol] = ethers.formatUnits(balance, symbol === 'USDC' ? 6 : 18);
+          
+          // Get both balance and decimals to ensure proper formatting
+          const [balance, decimals] = await Promise.all([
+            tokenContract.balanceOf(address),
+            tokenContract.decimals().catch(() => symbol === 'USDC' ? 6 : 18) // fallback decimals
+          ]);
+          
+          balances[symbol] = ethers.formatUnits(balance, decimals);
+          console.log(`${symbol} balance:`, balances[symbol]);
         } catch (error) {
           console.error(`Error fetching ${symbol} balance:`, error);
           balances[symbol] = '0';
@@ -250,7 +260,8 @@ export function useContract() {
       return balances;
     },
     enabled: isConnected && !!address && !!walletState.provider,
-    refetchInterval: 5000 // Refetch every 5 seconds
+    refetchInterval: 3000, // More frequent updates to catch blockchain changes
+    staleTime: 1000 // Consider data stale after 1 second
   });
 
   // Get ETH price
@@ -355,25 +366,46 @@ export function useContract() {
         wethAddress,
         [
           'function deposit() external payable',
-          'function balanceOf(address) external view returns (uint256)'
+          'function balanceOf(address) external view returns (uint256)',
+          'function name() external view returns (string)',
+          'function symbol() external view returns (string)'
         ],
         signer
       );
 
+      console.log(`Converting ${amount} ETH to WETH...`);
       const ethAmount = ethers.parseEther(amount);
+      
+      // Check initial WETH balance
+      const initialBalance = await wethContract.balanceOf(address);
+      console.log("Initial WETH balance:", ethers.formatEther(initialBalance));
+      
       const tx = await wethContract.deposit({ value: ethAmount });
+      console.log("Transaction sent:", tx.hash);
+      
       const receipt = await tx.wait();
+      console.log("Transaction confirmed:", receipt.status === 1 ? "Success" : "Failed");
+      
+      // Check final WETH balance
+      const finalBalance = await wethContract.balanceOf(address);
+      console.log("Final WETH balance:", ethers.formatEther(finalBalance));
 
-      return { tx, receipt };
+      return { tx, receipt, initialBalance, finalBalance };
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
+      // Force refresh token balances immediately
+      await refetchBalances();
+      
+      // Also invalidate queries to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ['token-balances'] });
+      
       toast({
-        title: "ETH Converted",
-        description: "ETH has been successfully converted to WETH!",
+        title: "ETH Converted Successfully!",
+        description: `Converted 0.001 ETH to WETH. Transaction: ${data.tx.hash.slice(0, 10)}...`,
       });
     },
     onError: (error: any) => {
+      console.error("WETH conversion error:", error);
       toast({
         title: "Conversion Failed",
         description: error.message || "Failed to convert ETH to WETH",

@@ -48,8 +48,29 @@ export class MemStorage implements IStorage {
 
   private loadFromStorage() {
     try {
-      const savedData = process.env.NODE_ENV === 'development' ? 
-        global.storageData : null;
+      let savedData = null;
+      
+      if (process.env.NODE_ENV === 'development') {
+        // Try to load from file first
+        try {
+          const fs = require('fs');
+          const path = require('path');
+          const filePath = path.join(process.cwd(), '.storage.json');
+          
+          if (fs.existsSync(filePath)) {
+            const fileData = fs.readFileSync(filePath, 'utf8');
+            savedData = JSON.parse(fileData);
+            console.log('Loaded storage from file');
+          }
+        } catch (fileError) {
+          console.log('No file storage found, trying global storage');
+        }
+        
+        // Fallback to global storage
+        if (!savedData) {
+          savedData = global.storageData;
+        }
+      }
 
       if (savedData) {
         this.users = new Map(savedData.users || []);
@@ -59,6 +80,7 @@ export class MemStorage implements IStorage {
         this.chatMessages = new Map(savedData.chatMessages || []);
         this.nftTokens = savedData.nftTokens || [];
         this.currentId = savedData.currentId || 1;
+        console.log(`Loaded ${this.intents.size} intents and ${this.nftTokens.length} NFTs from storage`);
       } else {
         this.users = new Map();
         this.walletConnections = new Map();
@@ -67,6 +89,7 @@ export class MemStorage implements IStorage {
         this.chatMessages = new Map();
         this.nftTokens = [];
         this.currentId = 1;
+        console.log('Initialized fresh storage');
       }
     } catch (error) {
       console.error('Error loading from storage:', error);
@@ -83,7 +106,10 @@ export class MemStorage implements IStorage {
   private saveToStorage() {
     try {
       if (process.env.NODE_ENV === 'development') {
-        global.storageData = {
+        const fs = require('fs');
+        const path = require('path');
+        
+        const storageData = {
           users: Array.from(this.users.entries()),
           walletConnections: Array.from(this.walletConnections.entries()),
           intents: Array.from(this.intents.entries()),
@@ -92,6 +118,13 @@ export class MemStorage implements IStorage {
           nftTokens: this.nftTokens,
           currentId: this.currentId
         };
+        
+        // Save to both global and file
+        global.storageData = storageData;
+        
+        // Also save to file for persistence across restarts
+        const filePath = path.join(process.cwd(), '.storage.json');
+        fs.writeFileSync(filePath, JSON.stringify(storageData, null, 2));
       }
     } catch (error) {
       console.error('Error saving to storage:', error);
