@@ -1,11 +1,11 @@
 
-import "@nomicfoundation/hardhat-toolbox";
-import dotenv from "dotenv";
+require("@nomicfoundation/hardhat-toolbox");
+const dotenv = require("dotenv");
 
 dotenv.config();
 
 /** @type import('hardhat/config').HardhatUserConfig */
-export default {
+module.exports = {
   solidity: {
     version: "0.8.21",
     settings: {
