@@ -169,12 +169,12 @@ export default function About() {
                 of decentralized infrastructure and AI integration in the blockchain space.
               </p>
               <div className="flex justify-center space-x-4">
-                <Button className="bg-primary hover:bg-primary-dark">
+                <Button className="bg-primary hover:bg-primary-dark" ref="https://chain.link/hackathon">
                   <SiChainlink className="mr-2" size={16} />
                   Learn About Chainlink
                 </Button>
                 <Button variant="outline">
-                  View Hackathon Details
+                  <a href="https://chain.link" target="_blank">View Hackathon Details</a>
                 </Button>
               </div>
             </CardContent>
