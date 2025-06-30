@@ -100,21 +100,7 @@ export default function Home() {
             ))}
           </div>
 
-          {/* Stats Section */}
-          <div className="grid md:grid-cols-4 gap-6 mb-16">
-            {[
-              { label: "Total Value Locked", value: "$2.4M+", icon: Wallet },
-              { label: "Active Strategies", value: "1,200+", icon: Activity },
-              { label: "Success Rate", value: "94.2%", icon: TrendingUp },
-              { label: "Gas Saved", value: "40%", icon: Shield }
-            ].map((stat, index) => (
-              <Card key={index} className="text-center p-6 border-0 shadow-md bg-gradient-to-br from-card to-muted/20">
-                <stat.icon className="h-8 w-8 mx-auto mb-3 text-primary" />
-                <div className="text-2xl font-bold text-foreground mb-1">{stat.value}</div>
-                <div className="text-sm text-muted-foreground">{stat.label}</div>
-              </Card>
-            ))}
-          </div>
+          
         </div>
       </section>
 
